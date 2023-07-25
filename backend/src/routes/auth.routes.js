@@ -20,12 +20,12 @@ router.get(
 );
 
 // Login failure redirect
-router.get("/login", function (req, res, next) {
+router.get("/login", (req, res, next) => {
   res.render("login");
 });
 
 // Logout
-router.get("/logout", function (req, res, next) {
+router.get("/logout", (req, res, next) => {
   req.logout(function (err) {
     if (err) {
       return next(err);
