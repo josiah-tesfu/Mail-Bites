@@ -23,6 +23,13 @@ Mail Bites is built using modern web technologies, including JavaScript (Node.js
 ## Rough UI Design:
 ![mail-bites](https://github.com/josiah-tesfu/Mail-Bites/assets/71205057/392081e8-b48b-4972-9abe-e9f9cd075691)
 
+## Current Progress:
+
+Current phase: Build basic backend framework:
+
+- Implemented user authentication using passport.js. Add error handling, improve routes, improve session management, handle refresh tokens.
+- Next step: use oath2Client to handle Gmail data. Access emails for a logged in user; store data in the session; perform actions, including delete, archive, mark as unread etc.; iterate through all relevant emails.
+
 
 Stay tuned for more updates as I continue to build and improve Mail Bites, making email management faster and more efficient!
 
