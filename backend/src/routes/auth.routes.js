@@ -6,7 +6,7 @@ const router = express.Router();
 // Redirect to Google
 router.get(
   "/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
+  passport.authenticate("google", { scope: ["profile", "email", "https://www.googleapis.com/auth/gmail.modify"] })
 );
 
 // Redirect back to app
