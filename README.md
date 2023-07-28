@@ -20,8 +20,12 @@ Mail Bites is particularly beneficial for those with a busy inbox. If you freque
 ## Technologies Used
 Mail Bites is built using modern web technologies, including JavaScript (Node.js and React), Express.js for the backend server, and the Gmail API for managing email interactions. For secure user authentication, the application uses Google OAuth 2.0.
 
-## Rough UI Design:
+## Potential UI 1:
 ![mail-bites](https://github.com/josiah-tesfu/Mail-Bites/assets/71205057/392081e8-b48b-4972-9abe-e9f9cd075691)
+
+## Potential UI 2:
+![all-email-view](https://github.com/josiah-tesfu/Mail-Bites/assets/71205057/e03851cf-32ed-49ee-b80e-ffd3e6aa80a0)
+
 
 ## Current Progress:
 
