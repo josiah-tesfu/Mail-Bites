@@ -1,5 +1,5 @@
 # Mail Bites
-Mail Bites is a unique, innovative application designed to reduce the time and effort spent checking emails.
+Mail Bites is an application designed to reduce the time and effort spent checking emails.
 
 ## Features
 ### Email Summarization
