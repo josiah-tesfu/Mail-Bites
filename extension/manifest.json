@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Mail Bites",
+  "description": "Minimal scaffolding for Gmail UI customization.",
+  "version": "0.1.0",
+  "action": {
+    "default_title": "Mail Bites"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://mail.google.com/*"
+      ],
+      "js": [
+        "content-script.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "host_permissions": [
+    "https://mail.google.com/*"
+  ]
+}
