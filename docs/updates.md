@@ -10,3 +10,7 @@
 - Documented testing strategy and workflow updates (`docs/testing.md`, updates to `docs/setup.md`).
 - Implemented the minimalist inbox MVP: Gmail conversations now render with sender, subject, date, hover styling, and expandable previews parsed via `conversationParser`.
 - Added `docs/project_roadmap.md` to outline near-term phases and removed roadmap content from `docs/architecture.md` to keep responsibilities clear.
+- Standardised typography on the Manrope font via injected stylesheet support (`ensureManropeFont`) and updated overlay styling.
+- Highlight polish: non-selected conversations dim once a row is opened, keeping the active thread in focus.
+- Enhanced layout spacing with larger top padding and a taller bottom fade-out band to soften scroll edges.
+- Added archive/delete action buttons that appear on hover and remain visible while a conversation is open; assets now bundled via the build script.

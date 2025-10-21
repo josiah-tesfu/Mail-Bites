@@ -1,6 +1,7 @@
 import { logger } from './logger';
 import { GmailViewTracker, ViewContext } from './viewTracker';
 import { MinimalInboxRenderer } from './ui/minimalInboxRenderer';
+import { ensureManropeFont } from './fontLoader';
 
 export interface MailBitesAppOptions {
   /**
@@ -51,6 +52,8 @@ export class MailBitesApp {
     if (this.rootElement && document.body?.contains(this.rootElement)) {
       return this.rootElement;
     }
+
+    ensureManropeFont();
 
     const root = document.createElement('div');
     root.id = this.rootId;

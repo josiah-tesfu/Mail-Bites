@@ -23,6 +23,16 @@ const ENTRY_POINT = path.join(PROJECT_ROOT, 'src', 'content', 'index.ts');
 const OUTPUT_JS = path.join(EXTENSION_DIR, 'content-script.js');
 const SOURCE_CSS = path.join(PROJECT_ROOT, 'src', 'content', 'content.css');
 const OUTPUT_CSS = path.join(EXTENSION_DIR, 'content.css');
+const STATIC_ASSETS = [
+  {
+    source: path.join(PROJECT_ROOT, 'archive-button.png'),
+    target: path.join(EXTENSION_DIR, 'archive-button.png')
+  },
+  {
+    source: path.join(PROJECT_ROOT, 'delete-button.png'),
+    target: path.join(EXTENSION_DIR, 'delete-button.png')
+  }
+];
 
 const isWatchMode = process.argv.includes('--watch');
 
@@ -34,6 +44,23 @@ async function copyStylesheet() {
   await fs.mkdir(path.dirname(OUTPUT_CSS), { recursive: true });
   await fs.copyFile(SOURCE_CSS, OUTPUT_CSS);
   console.info('[build] Synced content stylesheet to extension directory.');
+}
+
+async function copyStaticAssets() {
+  await Promise.all(
+    STATIC_ASSETS.map(async ({ source, target }) => {
+      try {
+        await fs.copyFile(source, target);
+      } catch (error) {
+        if (error && error.code === 'ENOENT') {
+          console.warn('[build] Static asset missing, skipping:', source);
+        } else {
+          throw error;
+        }
+      }
+    })
+  );
+  console.info('[build] Synced static assets to extension directory.');
 }
 
 /**
@@ -56,6 +83,7 @@ const buildOptions = {
         build.onEnd(async (result) => {
           if (result.errors.length === 0) {
             await copyStylesheet();
+            await copyStaticAssets();
           }
         });
       }

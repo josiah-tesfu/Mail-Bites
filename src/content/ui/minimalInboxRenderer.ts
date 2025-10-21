@@ -6,6 +6,25 @@ import {
 } from './conversationParser';
 import type { ConversationRow } from './types';
 
+type ActionType = 'archive' | 'delete';
+
+const ACTION_ICON_MAP: Record<ActionType, string> = {
+  archive: 'archive-button.png',
+  delete: 'delete-button.png'
+};
+
+const ACTION_LABELS: Record<ActionType, string> = {
+  archive: 'Archive conversation',
+  delete: 'Delete conversation'
+};
+
+function resolveAssetPath(filename: string): string {
+  if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
+    return chrome.runtime.getURL(filename);
+  }
+  return filename;
+}
+
 /**
  * Renders a minimalist inbox overlay listing conversations in Gmail's Primary
  * tab. Each item shows sender, subject, and date, with expandable snippets to
@@ -15,6 +34,7 @@ export class MinimalInboxRenderer {
   private container: HTMLElement | null = null;
   private expandedId: string | null = null;
   private conversations: ConversationData[] = [];
+  private highlightedId: string | null = null;
 
   /**
    * Renders the overlay into the provided root. Repeated calls will re-render
@@ -51,7 +71,10 @@ export class MinimalInboxRenderer {
   reset(): void {
     this.expandedId = null;
     this.conversations = [];
+    this.highlightedId = null;
     if (this.container) {
+      this.container.classList.remove('has-highlight');
+      delete this.container.dataset.highlightId;
       this.container.innerHTML = '';
     }
   }
@@ -73,6 +96,15 @@ export class MinimalInboxRenderer {
     }
 
     this.container.innerHTML = '';
+    this.container.classList.toggle(
+      'has-highlight',
+      Boolean(this.highlightedId)
+    );
+    if (this.highlightedId) {
+      this.container.dataset.highlightId = this.highlightedId;
+    } else {
+      delete this.container.dataset.highlightId;
+    }
 
     if (this.conversations.length === 0) {
       const emptyState = document.createElement('p');
@@ -94,6 +126,10 @@ export class MinimalInboxRenderer {
     item.className = 'mail-bites-item';
     item.dataset.conversationId = conversation.id;
 
+    if (this.highlightedId === conversation.id) {
+      item.classList.add('is-active');
+    }
+
     const header = document.createElement('div');
     header.className = 'mail-bites-item-header';
 
@@ -104,29 +140,32 @@ export class MinimalInboxRenderer {
     sender.className = 'mail-bites-sender';
     sender.textContent = conversation.sender || 'Unknown sender';
 
-    const separator = document.createElement('span');
-    separator.className = 'mail-bites-separator';
-    separator.textContent = '•';
-
     const subject = document.createElement('span');
     subject.className = 'mail-bites-subject';
     subject.textContent = conversation.subject || '(No subject)';
 
     main.appendChild(sender);
-    main.appendChild(separator);
     main.appendChild(subject);
 
     const date = document.createElement('span');
     date.className = 'mail-bites-date';
     date.textContent = conversation.date || '';
 
+    const actions = this.buildActions();
+
+    const right = document.createElement('div');
+    right.className = 'mail-bites-header-right';
+    right.appendChild(date);
+    right.appendChild(actions);
+
     header.appendChild(main);
-    header.appendChild(date);
+    header.appendChild(right);
     item.appendChild(header);
 
     const isExpanded = this.expandedId === conversation.id;
     if (isExpanded) {
       item.classList.add('is-expanded');
+      item.classList.add('is-active');
       const details = document.createElement('div');
       details.className = 'mail-bites-item-details';
       details.textContent =
@@ -151,12 +190,6 @@ export class MinimalInboxRenderer {
     return item;
   }
 
-  private toggle(conversationId: string): void {
-    this.expandedId =
-      this.expandedId === conversationId ? null : conversationId;
-    this.renderList();
-  }
-
   private collectConversations(mainElement: HTMLElement): ConversationData[] {
     const rows = Array.from(
       mainElement.querySelectorAll<ConversationRow>('tr.zA')
@@ -167,5 +200,48 @@ export class MinimalInboxRenderer {
         extractConversationData(row, `conversation-${index}`)
       )
       .filter((conversation): conversation is ConversationData => Boolean(conversation));
+  }
+
+  private buildActions(): HTMLElement {
+    const container = document.createElement('div');
+    container.className = 'mail-bites-actions';
+
+    const archiveButton = this.buildActionButton('archive');
+    const deleteButton = this.buildActionButton('delete');
+
+    container.appendChild(archiveButton);
+    container.appendChild(deleteButton);
+
+    return container;
+  }
+
+  private buildActionButton(type: ActionType): HTMLButtonElement {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `mail-bites-action mail-bites-action-${type}`;
+    button.title = ACTION_LABELS[type];
+    button.setAttribute('aria-label', ACTION_LABELS[type]);
+
+    const icon = document.createElement('img');
+    icon.src = resolveAssetPath(ACTION_ICON_MAP[type]);
+    icon.alt = '';
+    icon.decoding = 'async';
+    icon.loading = 'lazy';
+
+    button.appendChild(icon);
+
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      event.preventDefault();
+    });
+
+    return button;
+  }
+
+  private toggle(conversationId: string): void {
+    const isCurrentlyExpanded = this.expandedId === conversationId;
+    this.expandedId = isCurrentlyExpanded ? null : conversationId;
+    this.highlightedId = this.expandedId;
+    this.renderList();
   }
 }

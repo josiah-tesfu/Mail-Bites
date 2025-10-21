@@ -45,7 +45,8 @@ if (!globalThis.chrome) {
   globalThis.chrome = {
     runtime: {
       sendMessage: vi.fn(),
-      onMessage: createEvent()
+      onMessage: createEvent(),
+      getURL: vi.fn((path: string) => `chrome-extension://mocked/${path}`)
     },
     storage: {
       local: createStorageArea(),

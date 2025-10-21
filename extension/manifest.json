@@ -22,5 +22,16 @@
   ],
   "host_permissions": [
     "https://mail.google.com/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "archive-button.png",
+        "delete-button.png"
+      ],
+      "matches": [
+        "https://mail.google.com/*"
+      ]
+    }
   ]
 }
