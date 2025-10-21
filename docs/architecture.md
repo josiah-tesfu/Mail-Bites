@@ -33,6 +33,8 @@ This document captures the current architectural direction of Mail Bites. Update
 
 7. **Minimal inbox renderer (`src/content/ui/minimalInboxRenderer.ts`)**  
    Temporary proof-of-concept that hides Gmail behind a fullscreen overlay listing subject lines from the Primary inbox. Validates view-change plumbing and rendering hooks without final UI polish.
+8. **Conversation parsing (`src/content/ui/conversationParser.ts`)**  
+   Converts Gmail table rows into structured `ConversationData` objects (id, sender, subject, snippet, date) that the renderer consumes. A dedicated module keeps parsing logic isolated and easily testable.
 
 ## Build pipeline
 - **Tooling**: `scripts/build.js` wraps esbuild. It bundles `src/content/index.ts` (and transitive imports) into `extension/content-script.js` and copies the CSS asset.
@@ -48,11 +50,5 @@ This document captures the current architectural direction of Mail Bites. Update
 ## Extension packaging
 - `extension/manifest.json` is intentionally lean: a single content script (`content-script.js`) and stylesheet (`content.css`) injected on `https://mail.google.com/*`.
 - The manifest excludes background/service worker scripts for now. Phase 2 (AI summarization) can introduce them alongside API integrations.
-
-## Future evolution
-- **Minimalist UI**: Implement overlay modules that render inbox summaries, filters, or alternative layouts into `#mail-bites-root`. Consider a component system or micro-framework only when needed.
-- **AI summarization**: Introduce messaging between the content script and a background worker/service worker to manage API quotas and caching.
-- **Settings + persistence**: Add a configuration layer wrapping `chrome.storage` with schema validation so the UI can be customised without ad hoc code.
-- **Testing & QA**: Layer integration tests using tools like Puppeteer or Chrome’s Extension Testing API once behaviour stabilizes.
 
 Keep this document synchronized with the codebase so new collaborators—and your future self—can reason about Mail Bites at a glance.

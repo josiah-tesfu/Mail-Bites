@@ -1,17 +1,24 @@
 import type { ViewContext } from '../viewTracker';
 import { logger } from '../logger';
+import {
+  ConversationData,
+  extractConversationData
+} from './conversationParser';
+import type { ConversationRow } from './types';
 
 /**
- * Extracts and renders the list of visible email subject lines within the Gmail
- * primary inbox. This renderer is intentionally simple—its goal is to validate
- * the architectural scaffolding rather than ship production UI.
+ * Renders a minimalist inbox overlay listing conversations in Gmail's Primary
+ * tab. Each item shows sender, subject, and date, with expandable snippets to
+ * validate the Mail Bites architecture.
  */
 export class MinimalInboxRenderer {
   private container: HTMLElement | null = null;
+  private expandedId: string | null = null;
+  private conversations: ConversationData[] = [];
 
   /**
    * Renders the overlay into the provided root. Repeated calls will re-render
-   * the subject list based on the latest Gmail DOM state.
+   * based on the latest Gmail DOM state.
    */
   render(context: ViewContext, overlayRoot: HTMLElement): void {
     if (!context.mainElement) {
@@ -19,20 +26,31 @@ export class MinimalInboxRenderer {
       return;
     }
 
-    const subjects = this.collectSubjects(context.mainElement);
-    logger.info('MinimalInboxRenderer: Rendering subjects.', {
-      count: subjects.length,
+    const conversations = this.collectConversations(context.mainElement);
+
+    logger.info('MinimalInboxRenderer: Rendering conversations.', {
+      count: conversations.length,
       url: context.url
     });
 
+    this.conversations = conversations;
+    if (
+      this.expandedId &&
+      !conversations.some((conversation) => conversation.id === this.expandedId)
+    ) {
+      this.expandedId = null;
+    }
+
     this.ensureContainer(overlayRoot);
-    this.updateMarkup(subjects);
+    this.renderList();
   }
 
   /**
    * Clears the overlay contents.
    */
   reset(): void {
+    this.expandedId = null;
+    this.conversations = [];
     if (this.container) {
       this.container.innerHTML = '';
     }
@@ -44,58 +62,110 @@ export class MinimalInboxRenderer {
     }
 
     const container = document.createElement('div');
-    container.className = 'mail-bites-inbox-list';
-    overlayRoot.appendChild(container);
+    container.className = 'mail-bites-inbox';
     this.container = container;
+    overlayRoot.appendChild(container);
   }
 
-  private updateMarkup(subjects: string[]): void {
+  private renderList(): void {
     if (!this.container) {
       return;
     }
 
-    if (subjects.length === 0) {
-      this.container.innerHTML =
-        '<p class="mail-bites-empty">No conversations detected in the Primary inbox.</p>';
+    this.container.innerHTML = '';
+
+    if (this.conversations.length === 0) {
+      const emptyState = document.createElement('p');
+      emptyState.className = 'mail-bites-empty';
+      emptyState.textContent =
+        'No conversations detected in the Primary inbox.';
+      this.container.appendChild(emptyState);
       return;
     }
 
-    const list = document.createElement('ul');
-    list.className = 'mail-bites-subjects';
-
-    for (const subject of subjects) {
-      const item = document.createElement('li');
-      item.textContent = subject;
-      list.appendChild(item);
+    for (const conversation of this.conversations) {
+      const item = this.buildItem(conversation);
+      this.container.appendChild(item);
     }
-
-    this.container.innerHTML = '';
-    this.container.appendChild(list);
   }
 
-  /**
-   * Navigates Gmail's inbox table structure to collect subject lines.
-   */
-  private collectSubjects(mainElement: HTMLElement): string[] {
+  private buildItem(conversation: ConversationData): HTMLElement {
+    const item = document.createElement('article');
+    item.className = 'mail-bites-item';
+    item.dataset.conversationId = conversation.id;
+
+    const header = document.createElement('div');
+    header.className = 'mail-bites-item-header';
+
+    const main = document.createElement('div');
+    main.className = 'mail-bites-header-main';
+
+    const sender = document.createElement('span');
+    sender.className = 'mail-bites-sender';
+    sender.textContent = conversation.sender || 'Unknown sender';
+
+    const separator = document.createElement('span');
+    separator.className = 'mail-bites-separator';
+    separator.textContent = '•';
+
+    const subject = document.createElement('span');
+    subject.className = 'mail-bites-subject';
+    subject.textContent = conversation.subject || '(No subject)';
+
+    main.appendChild(sender);
+    main.appendChild(separator);
+    main.appendChild(subject);
+
+    const date = document.createElement('span');
+    date.className = 'mail-bites-date';
+    date.textContent = conversation.date || '';
+
+    header.appendChild(main);
+    header.appendChild(date);
+    item.appendChild(header);
+
+    const isExpanded = this.expandedId === conversation.id;
+    if (isExpanded) {
+      item.classList.add('is-expanded');
+      const details = document.createElement('div');
+      details.className = 'mail-bites-item-details';
+      details.textContent =
+        conversation.snippet || 'No preview available for this conversation.';
+      item.appendChild(details);
+    }
+
+    item.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.toggle(conversation.id);
+    });
+
+    item.addEventListener('mouseenter', () => {
+      item.classList.add('is-hovered');
+    });
+
+    item.addEventListener('mouseleave', () => {
+      item.classList.remove('is-hovered');
+    });
+
+    return item;
+  }
+
+  private toggle(conversationId: string): void {
+    this.expandedId =
+      this.expandedId === conversationId ? null : conversationId;
+    this.renderList();
+  }
+
+  private collectConversations(mainElement: HTMLElement): ConversationData[] {
     const rows = Array.from(
-      mainElement.querySelectorAll<HTMLTableRowElement>('tr.zA')
+      mainElement.querySelectorAll<ConversationRow>('tr.zA')
     );
 
-    const subjects = rows
-      .map((row) => {
-        // `span.bog` commonly contains the subject text.
-        const subjectSpan = row.querySelector<HTMLSpanElement>('span.bog');
-        if (subjectSpan && subjectSpan.textContent) {
-          return subjectSpan.textContent.trim();
-        }
-
-        // Fallback: attempt to read aria-label or title attributes.
-        const fallback =
-          row.getAttribute('aria-label') ?? row.getAttribute('title') ?? '';
-        return fallback.trim();
-      })
-      .filter((subject) => subject.length > 0);
-
-    return subjects;
+    return rows
+      .map((row, index) =>
+        extractConversationData(row, `conversation-${index}`)
+      )
+      .filter((conversation): conversation is ConversationData => Boolean(conversation));
   }
 }

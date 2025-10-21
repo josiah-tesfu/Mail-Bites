@@ -8,4 +8,5 @@
 ## 2024-06-06
 - Added testing scaffolding: Vitest for unit tests with Chrome API mocks, Playwright configuration for integration testing, and supporting directory structure.
 - Documented testing strategy and workflow updates (`docs/testing.md`, updates to `docs/setup.md`).
-- Implemented subject-only overlay renderer for architecture sanity check and refreshed extension styling to support fullscreen overlays.
+- Implemented the minimalist inbox MVP: Gmail conversations now render with sender, subject, date, hover styling, and expandable previews parsed via `conversationParser`.
+- Added `docs/project_roadmap.md` to outline near-term phases and removed roadmap content from `docs/architecture.md` to keep responsibilities clear.

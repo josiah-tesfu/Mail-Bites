@@ -27,6 +27,7 @@ scripts/
 docs/
 ├── setup.md              # This guide
 ├── architecture.md       # Architectural decisions and evolution
+├── project_roadmap.md    # Forward-looking milestones and phases
 └── updates.md            # Running log of repository changes
 package.json              # npm scripts + dev dependencies
 tsconfig.json             # TypeScript settings for editor tooling
@@ -59,10 +60,3 @@ The `GmailViewTracker` class (documented in `src/content/viewTracker.ts`) combin
 ### Testing commands
 - `npm run test:unit` runs Vitest against files in `tests/unit/`, using Chrome API mocks configured in `tests/setup/vitest.setup.ts`.
 - `npm run test:integration` launches Playwright (Chromium) with the unpacked extension for end-to-end testing. Ensure `npm run build` has been executed beforehand.
-
-## Next steps / customization hooks
-- Minimalist inbox UI: render into `#mail-bites-root` via helpers in `MailBitesApp`.
-- Persistent settings: integrate `chrome.storage.sync` or `chrome.storage.local`.
-- AI summarization: build on the same view change events to trigger background requests.
-
-Keep `docs/architecture.md` updated as the system grows, and log notable changes in `docs/updates.md` for quick historical context.
