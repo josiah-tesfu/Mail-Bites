@@ -1,0 +1,20 @@
+{
+  "name": "mail-bites",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.js",
+    "build:watch": "node scripts/build.js --watch",
+    "test": "npm run test:unit",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest watch",
+    "test:integration": "npx playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.1",
+    "@types/chrome": "^0.0.262",
+    "esbuild": "^0.21.4",
+    "jsdom": "^24.0.0",
+    "vitest": "^1.6.0"
+  }
+}

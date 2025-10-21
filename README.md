@@ -1,6 +1,9 @@
 # Mail Bites
 Mail Bites is an application designed to reduce the time and effort spent checking emails.
 
+## Getting Started
+Follow `docs/setup.md` for build and loading instructions, review the current architecture in `docs/architecture.md`, and check `docs/updates.md` for a concise history of repository changes. Testing guidance lives in `docs/testing.md`.
+
 ## Features
 ### Email Summarization
 Leveraging the power of the OpenAI API, Mail Bites will summarize emails into concise bullet-point summaries. This feature allows users to quickly absorb the key points without the need to read the entire email. Customization options will be available to adjust the level of summarization based on user preferences and needs.
@@ -36,5 +39,3 @@ Current phase: Build basic backend framework:
 
 
 Stay tuned for more updates as I continue to build and improve Mail Bites, making email management faster and more efficient!
-
-

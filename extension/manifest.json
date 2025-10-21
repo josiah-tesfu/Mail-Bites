@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Mail Bites",
   "description": "Minimal scaffolding for Gmail UI customization.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "action": {
     "default_title": "Mail Bites"
   },
