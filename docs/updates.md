@@ -14,3 +14,6 @@
 - Highlight polish: non-selected conversations dim once a row is opened, keeping the active thread in focus.
 - Enhanced layout spacing with larger top padding and a taller bottom fade-out band to soften scroll edges.
 - Added archive/delete action buttons that appear on hover and remain visible while a conversation is open; assets now bundled via the build script.
+- Unread conversations now receive bold typography across sender, subject, and date for quicker scanning.
+- Filtered the inbox overlay to show only unread conversations; roadmap now tracks a future toggle for revealing read mail on demand.
+- Archive/Delete buttons now remove conversations from the list immediately (tests cover the dismissal flow).

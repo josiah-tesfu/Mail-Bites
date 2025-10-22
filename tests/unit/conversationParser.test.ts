@@ -1,15 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import { extractConversationData } from '@/content/ui/conversationParser';
 
+interface RowOptions {
+  sender?: string;
+  subject?: string;
+  snippet?: string;
+  date?: string;
+  threadId?: string;
+  unread?: boolean;
+}
+
 function buildConversationRow({
   sender = 'Alice',
   subject = 'Hello World',
   snippet = '- Preview of the message',
   date = 'Jun 5',
-  threadId = 'thread-123'
-}: Partial<Record<'sender' | 'subject' | 'snippet' | 'date' | 'threadId', string>> = {}) {
+  threadId = 'thread-123',
+  unread = false
+}: RowOptions = {}) {
   const row = document.createElement('tr');
   row.className = 'zA';
+  row.classList.add(unread ? 'zE' : 'yO');
   if (threadId) {
     row.setAttribute('data-legacy-thread-id', threadId);
   }
@@ -58,6 +69,7 @@ describe('extractConversationData', () => {
     expect(conversation?.subject).toBe('Hello World');
     expect(conversation?.snippet).toBe('Preview of the message');
     expect(conversation?.date).toBe('Jun 5');
+    expect(conversation?.isUnread).toBe(false);
   });
 
   it('uses fallback id and sensible defaults when data is missing', () => {
@@ -66,7 +78,8 @@ describe('extractConversationData', () => {
       subject: 'Subject only',
       snippet: '',
       date: '',
-      threadId: ''
+      threadId: '',
+      unread: true
     });
 
     const conversation = extractConversationData(row, 'row-0');
@@ -77,6 +90,7 @@ describe('extractConversationData', () => {
     expect(conversation?.subject).toBe('Subject only');
     expect(conversation?.snippet).toBe('');
     expect(conversation?.date).toBe('');
+    expect(conversation?.isUnread).toBe(true);
   });
 
   it('returns null when both sender and subject are missing', () => {

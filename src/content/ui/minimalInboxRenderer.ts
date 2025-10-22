@@ -7,6 +7,7 @@ import {
 import type { ConversationRow } from './types';
 
 type ActionType = 'archive' | 'delete';
+type PreviewActionType = 'reply' | 'forward';
 
 const ACTION_ICON_MAP: Record<ActionType, string> = {
   archive: 'archive-button.png',
@@ -16,6 +17,16 @@ const ACTION_ICON_MAP: Record<ActionType, string> = {
 const ACTION_LABELS: Record<ActionType, string> = {
   archive: 'Archive conversation',
   delete: 'Delete conversation'
+};
+
+const PREVIEW_ACTION_ICON_MAP: Record<PreviewActionType, string> = {
+  reply: 'reply-button.png',
+  forward: 'forward-button.png'
+};
+
+const PREVIEW_ACTION_LABELS: Record<PreviewActionType, string> = {
+  reply: 'Reply to conversation',
+  forward: 'Forward conversation'
 };
 
 function resolveAssetPath(filename: string): string {
@@ -35,6 +46,7 @@ export class MinimalInboxRenderer {
   private expandedId: string | null = null;
   private conversations: ConversationData[] = [];
   private highlightedId: string | null = null;
+  private dismissedIds = new Set<string>();
 
   /**
    * Renders the overlay into the provided root. Repeated calls will re-render
@@ -46,7 +58,13 @@ export class MinimalInboxRenderer {
       return;
     }
 
-    const conversations = this.collectConversations(context.mainElement);
+    const conversations = this.collectConversations(context.mainElement)
+      .filter((conversation) => conversation.isUnread)
+      .filter((conversation) => !this.dismissedIds.has(conversation.id));
+
+    // NOTE: Read conversations are intentionally filtered out for now. This
+    // prepares the ground for a future "show read" toggle that will append
+    // the suppressed rows beneath the unread block.
 
     logger.info('MinimalInboxRenderer: Rendering conversations.', {
       count: conversations.length,
@@ -72,6 +90,7 @@ export class MinimalInboxRenderer {
     this.expandedId = null;
     this.conversations = [];
     this.highlightedId = null;
+    this.dismissedIds.clear();
     if (this.container) {
       this.container.classList.remove('has-highlight');
       delete this.container.dataset.highlightId;
@@ -110,7 +129,7 @@ export class MinimalInboxRenderer {
       const emptyState = document.createElement('p');
       emptyState.className = 'mail-bites-empty';
       emptyState.textContent =
-        'No conversations detected in the Primary inbox.';
+        'No unread emails in the Primary inbox.';
       this.container.appendChild(emptyState);
       return;
     }
@@ -170,6 +189,8 @@ export class MinimalInboxRenderer {
       details.className = 'mail-bites-item-details';
       details.textContent =
         conversation.snippet || 'No preview available for this conversation.';
+      const previewActions = this.buildPreviewActions();
+      details.appendChild(previewActions);
       item.appendChild(details);
     }
 
@@ -233,6 +254,7 @@ export class MinimalInboxRenderer {
     button.addEventListener('click', (event) => {
       event.stopPropagation();
       event.preventDefault();
+      this.handleConversationDismiss(button, type);
     });
 
     return button;
@@ -243,5 +265,70 @@ export class MinimalInboxRenderer {
     this.expandedId = isCurrentlyExpanded ? null : conversationId;
     this.highlightedId = this.expandedId;
     this.renderList();
+  }
+
+  private handleConversationDismiss(
+    button: HTMLButtonElement,
+    type: ActionType
+  ): void {
+    const article = button.closest<HTMLDivElement>('article.mail-bites-item');
+    const conversationId = article?.dataset.conversationId;
+
+    if (!article || !conversationId) {
+      logger.warn('Action button could not resolve conversation context.', {
+        type
+      });
+      return;
+    }
+
+    this.dismissedIds.add(conversationId);
+    this.conversations = this.conversations.filter(
+      (conversation) => conversation.id !== conversationId
+    );
+    if (this.expandedId === conversationId) {
+      this.expandedId = null;
+      this.highlightedId = null;
+    }
+
+    // future animation hook for dismissal transition
+    this.renderList();
+  }
+
+  private buildPreviewActions(): HTMLElement {
+    const container = document.createElement('div');
+    container.className = 'mail-bites-preview-actions';
+
+    const replyButton = this.buildPreviewActionButton('reply');
+    const forwardButton = this.buildPreviewActionButton('forward');
+
+    container.appendChild(replyButton);
+    container.appendChild(forwardButton);
+
+    return container;
+  }
+
+  private buildPreviewActionButton(
+    type: PreviewActionType
+  ): HTMLButtonElement {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `mail-bites-preview-action mail-bites-preview-action-${type}`;
+    button.title = PREVIEW_ACTION_LABELS[type];
+    button.setAttribute('aria-label', PREVIEW_ACTION_LABELS[type]);
+
+    const icon = document.createElement('img');
+    icon.src = resolveAssetPath(PREVIEW_ACTION_ICON_MAP[type]);
+    icon.alt = '';
+    icon.decoding = 'async';
+    icon.loading = 'lazy';
+
+    button.appendChild(icon);
+
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      event.preventDefault();
+    });
+
+    return button;
   }
 }

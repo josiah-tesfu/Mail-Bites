@@ -14,6 +14,11 @@ This roadmap captures the near-term development plan for Mail Bites, outlining b
 - Introduce actionable affordances (archive, delete, mark as read) by piggybacking on Gmail DOM interactions.
 - Establish architecture for reusable UI modules (e.g., dedicated renderer classes, state stores) to keep complexity manageable.
 - Expand unit/integration test coverage around UI behaviours as they grow.
+- Add a "Show read emails" toggle so users can append processed conversations below the unread list when needed.
+- Render reply and forward buttons alongside existing actions.
+- Wire reply and forward functionality (opening Gmail compose/reply flows).
+- Support composing new emails directly from Mail Bites.
+- Introduce user customization and settings persistence.
 
 ## Phase 2 – Gmail API Integration
 - Implement OAuth 2.0 sign-in flow within the extension (background/service worker + consent screen).

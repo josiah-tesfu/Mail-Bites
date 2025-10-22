@@ -31,6 +31,14 @@ const STATIC_ASSETS = [
   {
     source: path.join(PROJECT_ROOT, 'delete-button.png'),
     target: path.join(EXTENSION_DIR, 'delete-button.png')
+  },
+  {
+    source: path.join(PROJECT_ROOT, 'reply-button.png'),
+    target: path.join(EXTENSION_DIR, 'reply-button.png')
+  },
+  {
+    source: path.join(PROJECT_ROOT, 'forward-button.png'),
+    target: path.join(EXTENSION_DIR, 'forward-button.png')
   }
 ];
 

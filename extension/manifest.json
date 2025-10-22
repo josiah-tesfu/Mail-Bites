@@ -27,7 +27,9 @@
     {
       "resources": [
         "archive-button.png",
-        "delete-button.png"
+        "delete-button.png",
+        "reply-button.png",
+        "forward-button.png"
       ],
       "matches": [
         "https://mail.google.com/*"

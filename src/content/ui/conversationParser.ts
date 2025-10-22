@@ -6,6 +6,7 @@ export interface ConversationData {
   subject: string;
   snippet: string;
   date: string;
+  isUnread: boolean;
 }
 
 /**
@@ -66,6 +67,11 @@ function extractDate(row: ConversationRow): string {
   return dateText;
 }
 
+function extractUnreadState(row: ConversationRow): boolean {
+  // Gmail marks unread rows with the `zE` class; read rows use `yO`.
+  return row.classList.contains('zE');
+}
+
 /**
  * Parses a Gmail conversation row (`tr.zA`) into a simplified data object that
  * Mail Bites can render. Returns `null` when both sender and subject cannot be
@@ -89,6 +95,7 @@ export function extractConversationData(
     sender,
     subject,
     snippet,
-    date
+    date,
+    isUnread: extractUnreadState(row)
   };
 }
