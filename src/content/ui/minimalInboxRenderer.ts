@@ -157,18 +157,19 @@ export class MinimalInboxRenderer {
     overlayRoot.addEventListener('click', (event) => {
       const target = event.target as HTMLElement;
       const closestItem = target.closest('.mail-bites-item');
+      const closestResponseBox = target.closest('.mail-bites-response-box');
       
       // If there's no expanded email, nothing to do
       if (!this.expandedId) {
         return;
       }
       
-      // If click is inside an email item, don't collapse (let the item's own click handler deal with it)
-      if (closestItem) {
+      // If click is inside an email item or response box, don't collapse
+      if (closestItem || closestResponseBox) {
         return;
       }
       
-      // Click is outside any email item - collapse the expanded email
+      // Click is outside any email item or response box - collapse the expanded email
       logger.info('Collapsing email via click-outside', { 
         expandedId: this.expandedId,
         targetElement: target.className 
@@ -184,6 +185,10 @@ export class MinimalInboxRenderer {
     }
 
     const pendingHoverId = this.pendingHoverId;
+    
+    // Check if we're re-rendering an already expanded email (to prevent flicker)
+    const wasAlreadyExpanded = this.expandedId && 
+      this.container.querySelector(`article.mail-bites-item[data-conversation-id="${this.expandedId}"]`) !== null;
 
     // Preserve the existing toolbar before clearing
     const existingToolbar = this.container.querySelector('.mail-bites-toolbar');
@@ -225,7 +230,8 @@ export class MinimalInboxRenderer {
     }
 
     for (const conversation of this.conversations) {
-      const item = this.buildItem(conversation);
+      const isRerender = Boolean(wasAlreadyExpanded && conversation.id === this.expandedId);
+      const item = this.buildItem(conversation, isRerender);
       if (pendingHoverId && conversation.id === pendingHoverId) {
         item.classList.add('is-hovered');
       }
@@ -253,7 +259,7 @@ export class MinimalInboxRenderer {
     this.collapsingId = null;
   }
 
-  private buildItem(conversation: ConversationData): HTMLElement {
+  private buildItem(conversation: ConversationData, skipExpandAnimation = false): HTMLElement {
     const item = document.createElement('article');
     item.className = 'mail-bites-item';
     item.dataset.conversationId = conversation.id;
@@ -319,9 +325,15 @@ export class MinimalInboxRenderer {
         item.appendChild(previewActions);
       }
 
-      requestAnimationFrame(() => {
+      // If re-rendering an already expanded email, add is-visible immediately to prevent flicker
+      // If initial expansion, delay adding is-visible for smooth fade-in animation
+      if (skipExpandAnimation) {
         details.classList.add('is-visible');
-      });
+      } else {
+        requestAnimationFrame(() => {
+          details.classList.add('is-visible');
+        });
+      }
     }
 
     item.addEventListener('click', (event) => {
