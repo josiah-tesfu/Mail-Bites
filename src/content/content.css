@@ -185,7 +185,7 @@
     border-radius 0.22s cubic-bezier(0.33, 1, 0.68, 1),
     box-shadow 0.22s cubic-bezier(0.33, 1, 0.68, 1),
     opacity 0.2s ease,
-    transform 0.2s ease-out !important; /* Quick smooth scale transition */
+    transform 0.25s ease-out !important; /* Quick smooth scale transition */
 }
 
 .mail-bites-item.is-composer-active {

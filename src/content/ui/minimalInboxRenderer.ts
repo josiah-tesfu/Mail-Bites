@@ -201,6 +201,16 @@ export class MinimalInboxRenderer {
 
     // Reuse existing toolbar if available, otherwise build a new one
     const toolbar = existingToolbar || this.buildToolbar();
+    
+    // Clean up animation classes from toolbar buttons ONLY if search is not active
+    // (to prevent flicker when restoring from blur, but preserve animation when intentionally started)
+    if (existingToolbar && !this.isSearchActive) {
+      const buttons = existingToolbar.querySelectorAll('.mail-bites-action');
+      buttons.forEach((button) => {
+        button.classList.remove('is-appearing', 'is-rotating', 'is-shrinking');
+      });
+    }
+    
     this.container.appendChild(toolbar);
 
     if (this.conversations.length === 0) {
@@ -411,15 +421,13 @@ export class MinimalInboxRenderer {
         details.classList.remove('is-visible');
       }
       
-      // If not hovering, snap scale to 1.0 instantly before collapse animation
-      if (!hovered) {
-        // Remove is-expanded to prevent scale 1.01, add is-collapsing for instant scale 1.0
-        article.classList.remove('is-expanded');
-        article.classList.add('is-collapsing');
-        this.collapsingId = conversationId;
-        // Force a reflow to ensure the scale change happens instantly
-        void article.offsetHeight;
-      }
+      // Always transition scale to 1.0 when collapsing to prevent pop
+      // Remove is-expanded to prevent scale 1.01, add is-collapsing for smooth scale 1.0 transition
+      article.classList.remove('is-expanded');
+      article.classList.add('is-collapsing');
+      this.collapsingId = conversationId;
+      // Force a reflow to ensure the state change is applied before animation
+      void article.offsetHeight;
       
       this.conversationModes.set(conversationId, 'read');
       const current = this.conversations.find(
