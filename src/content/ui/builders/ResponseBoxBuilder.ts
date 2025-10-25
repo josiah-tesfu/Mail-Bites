@@ -1,10 +1,10 @@
-import type { ComposerActionType } from './types/actionTypes.js';
-import type { ConversationData } from './conversationParser.js';
+import type { ComposerActionType } from '../types/actionTypes.js';
+import type { ConversationData } from '../conversationParser.js';
 import {
   COMPOSER_ACTION_ICON_MAP,
   COMPOSER_ACTION_LABELS,
   resolveAssetPath
-} from './constants.js';
+} from '../utils/constants.js';
 
 /**
  * ResponseBoxBuilder - Builds response box DOM elements

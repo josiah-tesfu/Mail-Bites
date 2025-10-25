@@ -21,46 +21,50 @@ const PROJECT_ROOT = path.resolve(__dirname, '..');
 const EXTENSION_DIR = path.join(PROJECT_ROOT, 'extension');
 const ENTRY_POINT = path.join(PROJECT_ROOT, 'src', 'content', 'index.ts');
 const OUTPUT_JS = path.join(EXTENSION_DIR, 'content-script.js');
-const SOURCE_CSS = path.join(PROJECT_ROOT, 'src', 'content', 'content.css');
+const SOURCE_CSS = path.join(PROJECT_ROOT, 'src', 'content', 'styles', 'content.css');
 const OUTPUT_CSS = path.join(EXTENSION_DIR, 'content.css');
 const ADDITIONAL_CSS = [
   {
-    source: path.join(PROJECT_ROOT, 'src', 'content', 'animations.css'),
+    source: path.join(PROJECT_ROOT, 'src', 'content', 'styles', 'animations.css'),
     target: path.join(EXTENSION_DIR, 'animations.css')
   }
 ];
 const STATIC_ASSETS = [
   {
-    source: path.join(PROJECT_ROOT, 'archive-button.png'),
+    source: path.join(PROJECT_ROOT, 'assets', 'icons', 'archive-button.png'),
     target: path.join(EXTENSION_DIR, 'archive-button.png')
   },
   {
-    source: path.join(PROJECT_ROOT, 'delete-button.png'),
+    source: path.join(PROJECT_ROOT, 'assets', 'icons', 'delete-button.png'),
     target: path.join(EXTENSION_DIR, 'delete-button.png')
   },
   {
-    source: path.join(PROJECT_ROOT, 'reply-button.png'),
+    source: path.join(PROJECT_ROOT, 'assets', 'icons', 'reply-button.png'),
     target: path.join(EXTENSION_DIR, 'reply-button.png')
   },
   {
-    source: path.join(PROJECT_ROOT, 'forward-button.png'),
+    source: path.join(PROJECT_ROOT, 'assets', 'icons', 'forward-button.png'),
     target: path.join(EXTENSION_DIR, 'forward-button.png')
   },
   {
-    source: path.join(PROJECT_ROOT, 'send-button.png'),
+    source: path.join(PROJECT_ROOT, 'assets', 'icons', 'send-button.png'),
     target: path.join(EXTENSION_DIR, 'send-button.png')
   },
   {
-    source: path.join(PROJECT_ROOT, 'new-email-button.png'),
+    source: path.join(PROJECT_ROOT, 'assets', 'icons', 'new-email-button.png'),
     target: path.join(EXTENSION_DIR, 'new-email-button.png')
   },
   {
-    source: path.join(PROJECT_ROOT, 'search-button.png'),
+    source: path.join(PROJECT_ROOT, 'assets', 'icons', 'search-button.png'),
     target: path.join(EXTENSION_DIR, 'search-button.png')
   },
   {
-    source: path.join(PROJECT_ROOT, 'more-things.png'),
+    source: path.join(PROJECT_ROOT, 'assets', 'icons', 'more-things.png'),
     target: path.join(EXTENSION_DIR, 'more-things.png')
+  },
+  {
+    source: path.join(PROJECT_ROOT, 'assets', 'templates', 'composer-divider.html'),
+    target: path.join(EXTENSION_DIR, 'composer-divider.html')
   }
 ];
 

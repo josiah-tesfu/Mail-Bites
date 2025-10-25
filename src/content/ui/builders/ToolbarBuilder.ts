@@ -1,9 +1,9 @@
-import { ToolbarActionType } from './types/actionTypes.js';
+import { ToolbarActionType } from '../types/actionTypes.js';
 import {
   TOOLBAR_ACTION_ICON_MAP,
   TOOLBAR_ACTION_LABELS,
   resolveAssetPath
-} from './constants.js';
+} from '../utils/constants.js';
 
 /**
  * ToolbarBuilder - Builds toolbar DOM elements

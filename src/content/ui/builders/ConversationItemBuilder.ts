@@ -1,12 +1,12 @@
-import type { ActionType, PreviewActionType } from './types/actionTypes.js';
-import type { ConversationData } from './conversationParser.js';
+import type { ActionType, PreviewActionType } from '../types/actionTypes.js';
+import type { ConversationData } from '../conversationParser.js';
 import {
   ACTION_ICON_MAP,
   ACTION_LABELS,
   PREVIEW_ACTION_ICON_MAP,
   PREVIEW_ACTION_LABELS,
   resolveAssetPath
-} from './constants.js';
+} from '../utils/constants.js';
 
 /**
  * ConversationItemBuilder - Builds conversation item DOM elements

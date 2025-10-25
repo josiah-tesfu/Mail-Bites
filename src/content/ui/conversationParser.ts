@@ -1,4 +1,4 @@
-import type { ConversationRow } from './types';
+import type { ConversationRow } from './types/types';
 
 export interface ConversationData {
   id: string;

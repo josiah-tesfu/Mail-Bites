@@ -2,7 +2,7 @@ import type { ActionType, PreviewActionType, ComposerActionType } from './types/
 import type { ConversationData } from './conversationParser.js';
 import { UIState } from './UIState.js';
 import { AnimationController } from './AnimationController.js';
-import { ToolbarBuilder } from './ToolbarBuilder.js';
+import { ToolbarBuilder } from './builders/ToolbarBuilder.js';
 import { logger } from '../logger.js';
 
 /**

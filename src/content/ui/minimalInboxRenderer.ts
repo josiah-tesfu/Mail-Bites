@@ -4,7 +4,7 @@ import {
   ConversationData,
   extractConversationData
 } from './conversationParser';
-import type { ConversationRow } from './types';
+import type { ConversationRow } from './types/types';
 import type {
   ActionType,
   PreviewActionType,
@@ -13,9 +13,9 @@ import type {
 } from './types/actionTypes';
 import { AnimationController } from './AnimationController';
 import { UIState } from './UIState';
-import { ConversationItemBuilder } from './ConversationItemBuilder';
-import { ToolbarBuilder } from './ToolbarBuilder';
-import { ResponseBoxBuilder } from './ResponseBoxBuilder';
+import { ConversationItemBuilder } from './builders/ConversationItemBuilder';
+import { ToolbarBuilder } from './builders/ToolbarBuilder';
+import { ResponseBoxBuilder } from './builders/ResponseBoxBuilder';
 import { EventCoordinator } from './EventCoordinator';
 
 /**
