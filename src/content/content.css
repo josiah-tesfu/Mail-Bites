@@ -30,6 +30,108 @@
   position: relative;
 }
 
+/* === Toolbar === */
+.mail-bites-toolbar {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 24px;
+  align-items: center;
+  padding-left: 20px;
+}
+
+.mail-bites-toolbar .mail-bites-action {
+  background: transparent;
+  border: none;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  transition: transform 0.15s ease-out;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mail-bites-toolbar .mail-bites-action img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  filter: none;
+  transition: transform 0.3s ease-in;
+}
+
+.mail-bites-toolbar .mail-bites-action:hover {
+  transform: scale(1.3);
+}
+
+.mail-bites-toolbar .mail-bites-action:active {
+  transform: scale(1.0);
+}
+
+/* Rotation animation for search button */
+.mail-bites-toolbar .mail-bites-action.is-rotating img {
+  transform: rotate(135deg);
+}
+
+/* Shrinking animation for search button */
+.mail-bites-toolbar .mail-bites-action.is-shrinking {
+  transition: transform 0.15s ease-in, opacity 0.15s ease-in;
+  transform: scale(0);
+  opacity: 0;
+}
+
+/* Search input styling */
+.mail-bites-search-input {
+  width: 300px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  font-family: 'Manrope', 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 15px;
+  color: #111111;
+  outline: none;
+  padding: 0;
+  caret-color: #111111;
+  animation: mail-bites-search-appear 0.1s ease-in forwards;
+  /* Position so caret starts at center of where button was */
+  transform-origin: left center;
+}
+
+.mail-bites-search-input::placeholder {
+  color: transparent;
+}
+
+/* Growing animation for restored search button */
+.mail-bites-toolbar .mail-bites-action.is-appearing {
+  animation: mail-bites-button-appear 0.15s ease-in forwards;
+}
+
+@keyframes mail-bites-search-appear {
+  0% {
+    width: 0;
+    opacity: 0;
+    /* Start 10px to the right (at center of 20px button) */
+    margin-left: 10px;
+  }
+  100% {
+    width: 300px;
+    opacity: 1;
+    /* End at normal position */
+    margin-left: 0;
+  }
+}
+
+@keyframes mail-bites-button-appear {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 /* === Empty State === */
 .mail-bites-empty {
   text-align: center;
@@ -72,7 +174,23 @@
   border-radius: 12px;
   background: #f8f8f8;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-  transform: translateY(-3px);
+  transform: translateY(-3px) scale(1.01);
+}
+
+/* collapsing state - smooth quick transition to scale 1.0 */
+/* Use !important to override :hover pseudo-class */
+.mail-bites-item.is-collapsing {
+  transform: translateY(-3px) scale(1.0) !important;
+  transition: background-color 0.22s cubic-bezier(0.33, 1, 0.68, 1),
+    border-radius 0.22s cubic-bezier(0.33, 1, 0.68, 1),
+    box-shadow 0.22s cubic-bezier(0.33, 1, 0.68, 1),
+    opacity 0.2s ease,
+    transform 0.2s ease-out !important; /* Quick smooth scale transition */
+}
+
+.mail-bites-item.is-composer-active {
+  border-color: rgba(0, 0, 0, 0.45);
+  color: rgba(17, 17, 17, 0.6);
 }
 
 /* dim other rows when a card is open */
@@ -212,16 +330,35 @@
   font-size: 14px;
   color: #3c4043;
   line-height: 1.6;
+  opacity: 0;
+  max-height: 0;
+  transform: translateY(-6px);
+  overflow: hidden;
+  transition: opacity 600ms ease, transform 200ms ease, max-height 200ms ease;
+}
+
+.mail-bites-item-details.is-visible {
+  opacity: 1;
+  max-height: 600px; /* accommodate standard email previews */
+  transform: translateY(0);
+  overflow: visible;
 }
 
 /* preview actions positioned under snippet */
-.mail-bites-preview-actions {
+.mail-bites-action-row {
   display: flex;
   gap: 20px;
-  margin-top: 12px;
 }
 
-.mail-bites-preview-action {
+.mail-bites-action-row--card {
+  margin: 14px 0 18px 20px;
+}
+
+.mail-bites-action-row--composer {
+  margin: 14px 0 18px 20px;
+}
+
+.mail-bites-action-button {
   background: transparent;
   border: none;
   padding: 0;
@@ -231,34 +368,66 @@
   transition: transform 0.15s ease-out;
 }
 
-.mail-bites-preview-action img {
+.mail-bites-action-button img {
   width: 100%;
   height: 100%;
   object-fit: contain;
   display: block;
 }
 
-.mail-bites-preview-action:hover {
+.mail-bites-action-button:hover {
   transform: scale(1.3);
 }
 
-.mail-bites-preview-action:active {
+.mail-bites-action-button:active {
   transform: scale(1.0);
 }
 
+/* response composer box */
+.mail-bites-response-box {
+  margin: 10px 0 24px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #000000;
+  border-radius: 12px;
+  background: #f8f8f8;
+  min-height: 120px;
+  transform: scale(1.01);
+  transform-origin: center top;
+}
+
 /* === Footer Fade === */
+.mail-bites-inbox::before,
 .mail-bites-inbox::after {
   content: '';
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
-  height: 144px;
+  height: 36px;
   pointer-events: none;
+  z-index: 2147483647;
+}
+
+.mail-bites-inbox::before {
+  top: 0;
+  background: linear-gradient(
+    to top,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.6) 55%,
+    rgba(255, 255, 255, 0.9) 100%
+  );
+}
+
+.mail-bites-inbox::after {
+  bottom: 0;
   background: linear-gradient(
     to bottom,
     rgba(255, 255, 255, 0) 0%,
     rgba(255, 255, 255, 0.6) 55%,
     rgba(255, 255, 255, 0.9) 100%
   );
+}
+.mail-bites-response-body {
+  flex: 1 1 auto;
 }

@@ -17,3 +17,4 @@
 - Unread conversations now receive bold typography across sender, subject, and date for quicker scanning.
 - Filtered the inbox overlay to show only unread conversations; roadmap now tracks a future toggle for revealing read mail on demand.
 - Archive/Delete buttons now remove conversations from the list immediately (tests cover the dismissal flow).
+- Reply/Forward buttons hide the preview actions and open a dedicated composer box beneath the email; tracked conversation modes persist across re-renders.

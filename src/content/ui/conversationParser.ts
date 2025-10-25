@@ -7,6 +7,7 @@ export interface ConversationData {
   snippet: string;
   date: string;
   isUnread: boolean;
+  mode: 'read' | 'reply' | 'forward';
 }
 
 /**
@@ -96,6 +97,7 @@ export function extractConversationData(
     subject,
     snippet,
     date,
-    isUnread: extractUnreadState(row)
+    isUnread: extractUnreadState(row),
+    mode: 'read'
   };
 }

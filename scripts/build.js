@@ -23,6 +23,12 @@ const ENTRY_POINT = path.join(PROJECT_ROOT, 'src', 'content', 'index.ts');
 const OUTPUT_JS = path.join(EXTENSION_DIR, 'content-script.js');
 const SOURCE_CSS = path.join(PROJECT_ROOT, 'src', 'content', 'content.css');
 const OUTPUT_CSS = path.join(EXTENSION_DIR, 'content.css');
+const ADDITIONAL_CSS = [
+  {
+    source: path.join(PROJECT_ROOT, 'src', 'content', 'animations.css'),
+    target: path.join(EXTENSION_DIR, 'animations.css')
+  }
+];
 const STATIC_ASSETS = [
   {
     source: path.join(PROJECT_ROOT, 'archive-button.png'),
@@ -39,6 +45,18 @@ const STATIC_ASSETS = [
   {
     source: path.join(PROJECT_ROOT, 'forward-button.png'),
     target: path.join(EXTENSION_DIR, 'forward-button.png')
+  },
+  {
+    source: path.join(PROJECT_ROOT, 'send-button.png'),
+    target: path.join(EXTENSION_DIR, 'send-button.png')
+  },
+  {
+    source: path.join(PROJECT_ROOT, 'new-email-button.png'),
+    target: path.join(EXTENSION_DIR, 'new-email-button.png')
+  },
+  {
+    source: path.join(PROJECT_ROOT, 'search-button.png'),
+    target: path.join(EXTENSION_DIR, 'search-button.png')
   }
 ];
 
@@ -52,6 +70,12 @@ async function copyStylesheet() {
   await fs.mkdir(path.dirname(OUTPUT_CSS), { recursive: true });
   await fs.copyFile(SOURCE_CSS, OUTPUT_CSS);
   console.info('[build] Synced content stylesheet to extension directory.');
+  await Promise.all(
+    ADDITIONAL_CSS.map(async ({ source, target }) => {
+      await fs.copyFile(source, target);
+    })
+  );
+  console.info('[build] Synced shared animation stylesheet.');
 }
 
 async function copyStaticAssets() {

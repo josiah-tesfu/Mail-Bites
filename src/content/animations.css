@@ -1,0 +1,52 @@
+/* === Shared Animations === */
+
+/* bezel + bounce for expanding cards */
+.mail-bites-anim-bezel {
+  animation: mail-bites-bezel-pop-card 400ms ease-out;
+}
+
+.mail-bites-anim-bezel-reverse {
+  animation: mail-bites-bezel-pop-card 400ms ease-out reverse;
+}
+
+.mail-bites-anim-bezel-surface {
+  animation: mail-bites-bezel-pop-surface 400ms ease-out;
+}
+
+@keyframes mail-bites-bezel-pop-card {
+  0% {
+    border-radius: 0;
+    transform: translateY(0) scale(1.01);
+  }
+  30% {
+    border-radius: 20px;
+    transform: translateY(-6px) scale(1.015);
+  }
+  80% {
+    border-radius: 6px;
+    transform: translateY(-2px) scale(1.01);
+  }
+  100% {
+    border-radius: 12px;
+    transform: translateY(-3px) scale(1.01);
+  }
+}
+
+@keyframes mail-bites-bezel-pop-surface {
+  0% {
+    border-radius: 0;
+    transform: translateY(3) scale(1.01);
+  }
+  30% {
+    border-radius: 20px;
+    transform: translateY(-3px) scale(1.015);
+  }
+  80% {
+    border-radius: 6px;
+    transform: translateY(1px) scale(1.01);
+  }
+  100% {
+    border-radius: 12px;
+    transform: translateY(0) scale(1.01);
+  }
+}

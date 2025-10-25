@@ -70,6 +70,7 @@ describe('extractConversationData', () => {
     expect(conversation?.snippet).toBe('Preview of the message');
     expect(conversation?.date).toBe('Jun 5');
     expect(conversation?.isUnread).toBe(false);
+    expect(conversation?.mode).toBe('read');
   });
 
   it('uses fallback id and sensible defaults when data is missing', () => {
@@ -91,6 +92,7 @@ describe('extractConversationData', () => {
     expect(conversation?.snippet).toBe('');
     expect(conversation?.date).toBe('');
     expect(conversation?.isUnread).toBe(true);
+    expect(conversation?.mode).toBe('read');
   });
 
   it('returns null when both sender and subject are missing', () => {

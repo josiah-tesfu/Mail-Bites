@@ -39,4 +39,8 @@ This roadmap captures the near-term development plan for Mail Bites, outlining b
 - **Performance**: Monitor DOM manipulation and API usage to ensure the extension stays lightweight.
 - **Security & Privacy**: Revisit permissions and data handling regularly, especially when introducing API access or third-party integrations.
 
+## Backlog / Known Issues
+- Collapse animation should play out even when the pointer leaves mid-click; avoid hover transform snapping after the fact.
+
+
 Keep this roadmap in sync with project goals so implementation aligns with long-term strategy.

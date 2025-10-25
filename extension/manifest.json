@@ -15,7 +15,8 @@
         "content-script.js"
       ],
       "css": [
-        "content.css"
+        "content.css",
+        "animations.css"
       ],
       "run_at": "document_idle"
     }
@@ -29,7 +30,10 @@
         "archive-button.png",
         "delete-button.png",
         "reply-button.png",
-        "forward-button.png"
+        "forward-button.png",
+        "send-button.png",
+        "new-email-button.png",
+        "search-button.png"
       ],
       "matches": [
         "https://mail.google.com/*"
