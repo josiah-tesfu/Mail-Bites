@@ -9,7 +9,7 @@ import type { ConversationRow } from './types';
 type ActionType = 'archive' | 'delete';
 type PreviewActionType = 'reply' | 'forward';
 type ComposerActionType = 'send' | 'delete';
-type ToolbarActionType = 'new-email' | 'search';
+type ToolbarActionType = 'new-email' | 'search' | 'more-things';
 
 const ACTION_ICON_MAP: Record<ActionType, string> = {
   archive: 'archive-button.png',
@@ -43,12 +43,14 @@ const COMPOSER_ACTION_LABELS: Record<ComposerActionType, string> = {
 
 const TOOLBAR_ACTION_ICON_MAP: Record<ToolbarActionType, string> = {
   'new-email': 'new-email-button.png',
-  search: 'search-button.png'
+  search: 'search-button.png',
+  'more-things': 'more-things.png'
 };
 
 const TOOLBAR_ACTION_LABELS: Record<ToolbarActionType, string> = {
   'new-email': 'Compose new email',
-  search: 'Search emails'
+  search: 'Search emails',
+  'more-things': 'More actions'
 };
 
 function resolveAssetPath(filename: string): string {
@@ -74,6 +76,7 @@ export class MinimalInboxRenderer {
   private collapsingId: string | null = null;
   private conversationModes = new Map<string, ConversationData['mode']>();
   private isSearchActive = false;
+  private isMoreThingsExpanded = false;
   private clickOutsideHandlerAttached = false;
 
   /**
@@ -130,6 +133,7 @@ export class MinimalInboxRenderer {
     this.pendingHoverId = null;
     this.conversationModes.clear();
     this.isSearchActive = false;
+    this.isMoreThingsExpanded = false;
     if (this.container) {
       this.container.classList.remove('has-highlight');
       delete this.container.dataset.highlightId;
@@ -190,8 +194,10 @@ export class MinimalInboxRenderer {
     const wasAlreadyExpanded = this.expandedId && 
       this.container.querySelector(`article.mail-bites-item[data-conversation-id="${this.expandedId}"]`) !== null;
 
-    // Preserve the existing toolbar before clearing
-    const existingToolbar = this.container.querySelector('.mail-bites-toolbar');
+    // Preserve the existing toolbar ONLY when search is active
+    // (to prevent animation interruption). For more-things expansion,
+    // we need to rebuild to show the animated transition.
+    const existingToolbar = this.isSearchActive ? this.container.querySelector('.mail-bites-toolbar') : null;
     
     this.container.innerHTML = '';
     this.container.classList.toggle(
@@ -206,15 +212,6 @@ export class MinimalInboxRenderer {
 
     // Reuse existing toolbar if available, otherwise build a new one
     const toolbar = existingToolbar || this.buildToolbar();
-    
-    // Clean up animation classes from toolbar buttons ONLY if search is not active
-    // (to prevent flicker when restoring from blur, but preserve animation when intentionally started)
-    if (existingToolbar && !this.isSearchActive) {
-      const buttons = existingToolbar.querySelectorAll('.mail-bites-action');
-      buttons.forEach((button) => {
-        button.classList.remove('is-appearing', 'is-rotating', 'is-shrinking');
-      });
-    }
     
     this.container.appendChild(toolbar);
 
@@ -643,6 +640,21 @@ export class MinimalInboxRenderer {
     toolbar.appendChild(newEmailButton);
     toolbar.appendChild(searchButton);
 
+    if (this.isMoreThingsExpanded) {
+      // Show the 3 expanded icons (using delete-button.png as placeholder)
+      const icon1 = this.buildExpandedIcon('icon1');
+      const icon2 = this.buildExpandedIcon('icon2');
+      const icon3 = this.buildExpandedIcon('icon3');
+      
+      toolbar.appendChild(icon1);
+      toolbar.appendChild(icon2);
+      toolbar.appendChild(icon3);
+    } else {
+      // Show the more-things button
+      const moreThingsButton = this.buildToolbarButton('more-things');
+      toolbar.appendChild(moreThingsButton);
+    }
+
     return toolbar;
   }
 
@@ -672,10 +684,62 @@ export class MinimalInboxRenderer {
       
       if (type === 'search') {
         this.handleSearchButtonClick(button);
+      } else if (type === 'more-things') {
+        this.handleMoreThingsClick(button);
       }
     });
 
     return button;
+  }
+
+  private buildExpandedIcon(id: string): HTMLButtonElement {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'mail-bites-action mail-bites-expanded-icon is-appearing-expanded';
+    button.title = 'Action';
+    button.setAttribute('aria-label', 'Action');
+
+    const icon = document.createElement('img');
+    icon.src = resolveAssetPath('delete-button.png'); // Placeholder
+    icon.alt = '';
+    icon.decoding = 'async';
+    icon.loading = 'lazy';
+
+    button.appendChild(icon);
+
+    // Remove animation class after it completes so button behaves like normal toolbar buttons
+    button.addEventListener('animationend', () => {
+      button.classList.remove('is-appearing-expanded');
+    }, { once: true });
+
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      event.preventDefault();
+      
+      // Collapse any expanded email when clicking toolbar buttons
+      if (this.expandedId) {
+        this.toggle(this.expandedId);
+      }
+      
+      // TODO: Add specific action for each icon
+    });
+
+    return button;
+  }
+
+  private handleMoreThingsClick(button: HTMLButtonElement): void {
+    if (this.isMoreThingsExpanded) {
+      return;
+    }
+
+    // Add animation class for sliding right and fading out
+    button.classList.add('is-sliding-out');
+    
+    // Start showing icons halfway through button slide-out (150ms)
+    setTimeout(() => {
+      this.isMoreThingsExpanded = true;
+      this.renderList();
+    }, 150); // 50% of slide-out animation (300ms total)
   }
 
   private handleSearchButtonClick(button: HTMLButtonElement): void {

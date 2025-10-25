@@ -57,6 +57,10 @@ const STATIC_ASSETS = [
   {
     source: path.join(PROJECT_ROOT, 'search-button.png'),
     target: path.join(EXTENSION_DIR, 'search-button.png')
+  },
+  {
+    source: path.join(PROJECT_ROOT, 'more-things.png'),
+    target: path.join(EXTENSION_DIR, 'more-things.png')
   }
 ];
 

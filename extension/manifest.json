@@ -33,7 +33,8 @@
         "forward-button.png",
         "send-button.png",
         "new-email-button.png",
-        "search-button.png"
+        "search-button.png",
+        "more-things.png"
       ],
       "matches": [
         "https://mail.google.com/*"

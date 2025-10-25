@@ -46,8 +46,8 @@
   width: 20px;
   height: 20px;
   cursor: pointer;
-  transition: transform 0.15s ease-out;
-  opacity: 1;
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out;
+  opacity: 0.4; /* Make toolbar buttons more subtle */
   pointer-events: auto;
 }
 
@@ -62,10 +62,12 @@
 
 .mail-bites-toolbar .mail-bites-action:hover {
   transform: scale(1.3);
+  opacity: 1; /* Full opacity on hover */
 }
 
 .mail-bites-toolbar .mail-bites-action:active {
   transform: scale(1.0);
+  opacity: 1;
 }
 
 /* Rotation animation for search button */
@@ -78,6 +80,15 @@
   transition: transform 0.15s ease-in, opacity 0.15s ease-in;
   transform: scale(0);
   opacity: 0;
+}
+
+/* Sliding out animation for more-things button */
+.mail-bites-toolbar .mail-bites-action.is-sliding-out {
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+  /* Move right by 80px (20px button + 20px gap) * 3 icons + final gap */
+  transform: translateX(140px);
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* Search input styling */
@@ -106,6 +117,13 @@
   animation: mail-bites-button-appear 0.15s ease-in forwards;
 }
 
+/* Expanding animation for more-things expanded icons */
+/* Starts at 150ms (50% through button slide), runs for 250ms */
+/* Animation class is removed after completion so icons behave like normal toolbar buttons */
+.mail-bites-toolbar .mail-bites-action.is-appearing-expanded {
+  animation: mail-bites-expanded-icon-appear 0.25s ease-out forwards;
+}
+
 @keyframes mail-bites-search-appear {
   0% {
     width: 0;
@@ -129,6 +147,17 @@
   100% {
     transform: scale(1);
     opacity: 1;
+  }
+}
+
+@keyframes mail-bites-expanded-icon-appear {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.4; /* Match toolbar button default opacity */
   }
 }
 
