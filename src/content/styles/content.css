@@ -43,17 +43,26 @@
   background: transparent;
   border: none;
   padding: 0;
-  width: 20px;
-  height: 20px;
+  width: auto;
+  height: 24px;
   cursor: pointer;
   transition: transform 0.15s ease-out, opacity 0.15s ease-out;
   opacity: 0.4; /* Make toolbar buttons more subtle */
   pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Larger new-email button */
+.mail-bites-toolbar .mail-bites-toolbar-action-new-email {
+  width: auto;
+  height: 24px;
 }
 
 .mail-bites-toolbar .mail-bites-action img {
-  width: 100%;
-  height: 100%;
+  width: auto;
+  height: 24px;
   object-fit: contain;
   display: block;
   filter: none;
@@ -327,15 +336,18 @@
   background: transparent;
   border: none;
   padding: 0;
-  width: 20px; /* button size */
-  height: 20px;
+  width: auto;
+  height: 24px;
   cursor: pointer;
   transition: transform 0.15s ease-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .mail-bites-action img {
-  width: 100%;
-  height: 100%;
+  width: auto;
+  height: 24px;
   object-fit: contain;
   display: block;
   filter: none;
@@ -384,22 +396,26 @@
 }
 
 .mail-bites-action-row--composer {
-  margin: 14px 0 18px 20px;
+  margin: 2px 0 18px 20px;
+  padding: 0 20px 0 0;
 }
 
 .mail-bites-action-button {
   background: transparent;
   border: none;
   padding: 0;
-  width: 20px;
-  height: 20px;
+  width: auto;
+  height: 24px;
   cursor: pointer;
   transition: transform 0.15s ease-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .mail-bites-action-button img {
-  width: 100%;
-  height: 100%;
+  width: auto;
+  height: 24px;
   object-fit: contain;
   display: block;
 }
@@ -414,8 +430,8 @@
 
 /* response composer box */
 .mail-bites-response-box {
-  margin: 10px 0 24px;
-  padding: 18px 20px;
+  margin: 12px calc(var(--detail-gap) - 12px) 24px;
+  padding: 0;
   display: flex;
   flex-direction: column;
   border: 1px solid #000000;
@@ -424,6 +440,98 @@
   min-height: 120px;
   transform: scale(1.01);
   transform-origin: center top;
+}
+
+/* standalone compose box (direct child of container, not inside item) */
+.mail-bites-inbox > .mail-bites-response-box {
+  margin: 12px 0 24px;
+}
+
+/* composer section with divider */
+.mail-bites-composer-section {
+  padding: 8px 0;
+  margin: 0 20px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  border-bottom: 1px solid #c5c5c5;
+}
+
+.mail-bites-composer-section:last-of-type {
+  border-bottom: none;
+  flex: 1;
+  align-items: stretch;
+  padding: 12px 0;
+}
+
+.mail-bites-composer-section:nth-last-child(2) {
+  border-bottom: none;
+}
+
+/* wrapper for label + input overlay */
+.mail-bites-composer-field-wrapper {
+  flex: 1;
+  position: relative;
+  min-height: 20px;
+}
+
+/* composer label */
+.mail-bites-composer-label {
+  font-family: 'Manrope', 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  color: #111111;
+  opacity: 0.4;
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+/* composer input */
+.mail-bites-composer-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-family: 'Manrope', 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 15px;
+  color: #111111;
+  outline: none;
+  padding: 0;
+  caret-color: #111111;
+  font-weight: 500;
+  position: relative;
+}
+
+/* hide label when input has value */
+.mail-bites-composer-field-wrapper.has-value .mail-bites-composer-label {
+  opacity: 0;
+}
+
+.mail-bites-composer-input::placeholder {
+  color: #5f6368;
+  font-weight: 500;
+}
+
+/* composer textarea */
+.mail-bites-composer-textarea {
+  flex: 1;
+  min-height: 80px;
+  border: none;
+  background: transparent;
+  font-family: 'Manrope', 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 15px;
+  color: #111111;
+  line-height: 1.6;
+  outline: none;
+  padding: 0;
+  resize: vertical;
+  caret-color: #111111;
+}
+
+.mail-bites-composer-textarea::placeholder {
+  color: #5f6368;
 }
 
 /* === Footer Fade === */

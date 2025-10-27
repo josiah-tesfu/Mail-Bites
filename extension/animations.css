@@ -13,6 +13,21 @@
   animation: mail-bites-bezel-pop-surface 400ms ease-out;
 }
 
+/* rotation animation for new email button */
+.mail-bites-anim-rotate-close img {
+  animation: mail-bites-rotate-close 300ms forwards;
+}
+
+/* rotation animation for closing (reverse) */
+.mail-bites-anim-rotate-open img {
+  animation: mail-bites-rotate-open 300ms forwards;
+}
+
+/* persistent rotated state */
+.mail-bites-toolbar-action-new-email.is-rotated img {
+  transform: rotate(90deg);
+}
+
 @keyframes mail-bites-bezel-pop-card {
   0% {
     border-radius: 0;
@@ -48,5 +63,27 @@
   100% {
     border-radius: 12px;
     transform: translateY(0) scale(1.01);
+  }
+}
+
+@keyframes mail-bites-rotate-close {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(90deg);
+  }
+}
+
+@keyframes mail-bites-rotate-open {
+  0% {
+    transform: rotate(90deg);
+  }
+  100% {
+    transform: rotate(180deg);
+  }
+}
+  100% {
+    transform: rotate(0deg);
   }
 }

@@ -185,18 +185,85 @@ export class EventCoordinator {
   /**
    * Phase 4.3: Handle composer action clicks (send/delete)
    */
-  handleComposerActionClick(type: ComposerActionType, conversation: ConversationData): void {
+  handleComposerActionClick(type: ComposerActionType, conversation: ConversationData | null): void {
     if (type === 'delete') {
-      const conversationModes = this.state.getConversationModes();
-      conversationModes.set(conversation.id, 'read');
-      this.state.setConversationModes(conversationModes);
-      conversation.mode = 'read';
-      this.state.setExpandedId(conversation.id);
-      this.state.setHighlightedId(conversation.id);
-      this.state.setPendingHoverId(conversation.id);
+      if (conversation) {
+        // Deleting from reply/forward composer - revert to read mode
+        const conversationModes = this.state.getConversationModes();
+        conversationModes.set(conversation.id, 'read');
+        this.state.setConversationModes(conversationModes);
+        conversation.mode = 'read';
+        this.state.setExpandedId(conversation.id);
+        this.state.setHighlightedId(conversation.id);
+        this.state.setPendingHoverId(conversation.id);
+      } else {
+        // Deleting standalone compose box
+        this.state.setIsComposing(false);
+      }
       this.triggerRender();
     }
     // TODO: Handle 'send' type
+  }
+
+  /**
+   * Handle new email button click
+   */
+  handleNewEmailClick(): void {
+    const newEmailButton = this.state.getContainer()?.querySelector<HTMLButtonElement>(
+      '.mail-bites-toolbar-action-new-email'
+    );
+    
+    const willBeComposing = !this.state.getIsComposing();
+    
+    if (!newEmailButton) {
+      this.state.setIsComposing(willBeComposing);
+      this.triggerRender();
+      return;
+    }
+
+    if (willBeComposing) {
+      // Opening: open box immediately then animate
+      this.state.setIsComposing(true);
+      this.triggerRender();
+      
+      // Start animation after render
+      requestAnimationFrame(() => {
+        const btn = this.state.getContainer()?.querySelector<HTMLButtonElement>(
+          '.mail-bites-toolbar-action-new-email'
+        );
+        if (btn) {
+          this.state.setIsComposingAnimating(true);
+          btn.classList.add('mail-bites-anim-rotate-close');
+          
+          btn.addEventListener('animationend', () => {
+            btn.classList.remove('mail-bites-anim-rotate-close');
+            btn.classList.add('is-rotated');
+            this.state.setIsComposingAnimating(false);
+          }, { once: true });
+        }
+      });
+    } else {
+      // Closing: close box immediately then animate
+      this.state.setIsComposing(false);
+      this.triggerRender();
+      
+      // Start animation after render
+      requestAnimationFrame(() => {
+        const btn = this.state.getContainer()?.querySelector<HTMLButtonElement>(
+          '.mail-bites-toolbar-action-new-email'
+        );
+        if (btn) {
+          this.state.setIsComposingAnimating(true);
+          btn.classList.add('mail-bites-anim-rotate-open');
+          
+          btn.addEventListener('animationend', () => {
+            btn.classList.remove('mail-bites-anim-rotate-open');
+            btn.classList.remove('is-rotated');
+            this.state.setIsComposingAnimating(false);
+          }, { once: true });
+        }
+      });
+    }
   }
 
   /**
@@ -318,29 +385,54 @@ export class EventCoordinator {
   }
 
   /**
-   * Phase 4.5: Handle click-outside to collapse expanded email
+   * Phase 4.5: Handle click-outside to collapse expanded email or compose box
    */
   handleClickOutside(event: MouseEvent, overlayRoot: HTMLElement): void {
     const target = event.target as HTMLElement;
     const closestItem = target.closest('.mail-bites-item');
     const closestResponseBox = target.closest('.mail-bites-response-box');
     
-    // If there's no expanded email, nothing to do
-    if (!this.state.getExpandedId()) {
-      return;
-    }
-    
     // If click is inside an email item or response box, don't collapse
     if (closestItem || closestResponseBox) {
       return;
     }
     
-    // Click is outside any email item or response box - collapse the expanded email
-    logger.info('Collapsing email via click-outside', { 
-      expandedId: this.state.getExpandedId(),
-      targetElement: target.className 
-    });
-    this.handleItemClick(this.state.getExpandedId()!);
+    // Close compose box if open
+    if (this.state.getIsComposing()) {
+      logger.info('Closing compose box via click-outside');
+      
+      // Close box immediately
+      this.state.setIsComposing(false);
+      this.triggerRender();
+      
+      // Start animation after render
+      requestAnimationFrame(() => {
+        const newEmailButton = this.state.getContainer()?.querySelector<HTMLButtonElement>(
+          '.mail-bites-toolbar-action-new-email'
+        );
+        
+        if (newEmailButton) {
+          this.state.setIsComposingAnimating(true);
+          newEmailButton.classList.add('mail-bites-anim-rotate-open');
+          
+          newEmailButton.addEventListener('animationend', () => {
+            newEmailButton.classList.remove('mail-bites-anim-rotate-open');
+            newEmailButton.classList.remove('is-rotated');
+            this.state.setIsComposingAnimating(false);
+          }, { once: true });
+        }
+      });
+      return;
+    }
+    
+    // If there's an expanded email, collapse it
+    if (this.state.getExpandedId()) {
+      logger.info('Collapsing email via click-outside', { 
+        expandedId: this.state.getExpandedId(),
+        targetElement: target.className 
+      });
+      this.handleItemClick(this.state.getExpandedId()!);
+    }
   }
 
   /**

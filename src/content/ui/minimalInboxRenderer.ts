@@ -104,6 +104,7 @@ export class MinimalInboxRenderer {
     this.state.setExpandedId(null); // Phase 1.5: Write to UIState only
     this.state.setConversations([]); // Phase 1.5: Write to UIState only
     this.state.setHighlightedId(null); // Phase 1.5: Write to UIState only
+    this.state.setIsComposing(false);
     
     const dismissedIds = this.state.getDismissedIds(); // Phase 1.5: Read from UIState
     dismissedIds.clear();
@@ -152,15 +153,21 @@ export class MinimalInboxRenderer {
     const wasAlreadyExpanded = this.state.getExpandedId() &&  // Phase 1.5: Read from UIState
       container.querySelector(`article.mail-bites-item[data-conversation-id="${this.state.getExpandedId()}"]`) !== null; // Phase 1.5: Read from UIState
 
-    // Preserve the existing toolbar ONLY when search is active
-    // (to prevent animation interruption). For more-things expansion,
-    // we need to rebuild to show the animated transition.
-    const existingToolbar = this.state.getIsSearchActive() ? container.querySelector('.mail-bites-toolbar') : null; // Phase 1.5: Read from UIState
+    // Preserve the existing toolbar when search is active or new email button is animating
+    const existingToolbar = container.querySelector('.mail-bites-toolbar');
+    const shouldPreserveToolbar = this.state.getIsSearchActive() || 
+      existingToolbar?.querySelector('.mail-bites-anim-rotate-close') ||
+      this.state.getIsComposingAnimating();
+    const toolbarToReuse = shouldPreserveToolbar ? existingToolbar : null;
     
     container.innerHTML = '';
     container.classList.toggle(
       'has-highlight',
-      Boolean(this.state.getHighlightedId()) // Phase 1.5: Read from UIState
+      Boolean(this.state.getHighlightedId() || this.state.getIsComposing()) // Phase 1.5: Read from UIState
+    );
+    container.classList.toggle(
+      'is-composing-animating',
+      this.state.getIsComposingAnimating()
     );
     if (this.state.getHighlightedId()) { // Phase 1.5: Read from UIState
       container.dataset.highlightId = this.state.getHighlightedId()!; // Phase 1.5: Read from UIState
@@ -169,9 +176,15 @@ export class MinimalInboxRenderer {
     }
 
     // Reuse existing toolbar if available, otherwise build a new one
-    const toolbar = existingToolbar || this.buildToolbar();
+    const toolbar = toolbarToReuse || this.buildToolbar();
     
     container.appendChild(toolbar);
+
+    // Render standalone compose box if active
+    if (this.state.getIsComposing()) {
+      const composeBox = this.buildComposeBox();
+      container.appendChild(composeBox);
+    }
 
     if (this.state.getConversations().length === 0) { // Phase 1.5: Read from UIState
       const emptyState = document.createElement('p');
@@ -274,13 +287,23 @@ export class MinimalInboxRenderer {
   private buildResponseBox(conversation: ConversationData): HTMLElement {
     return this.responseBoxBuilder.build(
       conversation,
-      (type, conv) => this.handleComposerAction(type, conv)
+      conversation.mode as 'reply' | 'forward',
+      (type: ComposerActionType, conv: ConversationData | null) => this.handleComposerAction(type, conv)
+    );
+  }
+
+  // Build standalone compose box
+  private buildComposeBox(): HTMLElement {
+    return this.responseBoxBuilder.build(
+      null,
+      'compose',
+      (type: ComposerActionType, conv: ConversationData | null) => this.handleComposerAction(type, conv)
     );
   }
 
   // Phase 3.7: Composer action coordinator
   // Phase 4.3: Delegate to EventCoordinator.handleComposerActionClick()
-  private handleComposerAction(type: ComposerActionType, conversation: ConversationData): void {
+  private handleComposerAction(type: ComposerActionType, conversation: ConversationData | null): void {
     this.eventCoordinator.handleComposerActionClick(type, conversation);
   }
 
@@ -307,6 +330,8 @@ export class MinimalInboxRenderer {
       this.eventCoordinator.handleSearchButtonClick(button);
     } else if (type === 'more-things') {
       this.eventCoordinator.handleMoreThingsClick(button);
+    } else if (type === 'new-email') {
+      this.eventCoordinator.handleNewEmailClick();
     }
   }
 

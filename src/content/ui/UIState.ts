@@ -16,6 +16,8 @@ export class UIState {
   private isSearchActive = false;
   private isMoreThingsExpanded = false;
   private clickOutsideHandlerAttached = false;
+  private isComposing = false;
+  private isComposingAnimating = false;
 
   // Getters
   getContainer(): HTMLElement | null {
@@ -66,6 +68,14 @@ export class UIState {
     return this.clickOutsideHandlerAttached;
   }
 
+  getIsComposing(): boolean {
+    return this.isComposing;
+  }
+
+  getIsComposingAnimating(): boolean {
+    return this.isComposingAnimating;
+  }
+
   // Setters
   setContainer(value: HTMLElement | null): void {
     this.container = value;
@@ -113,5 +123,13 @@ export class UIState {
 
   setClickOutsideHandlerAttached(value: boolean): void {
     this.clickOutsideHandlerAttached = value;
+  }
+
+  setIsComposing(value: boolean): void {
+    this.isComposing = value;
+  }
+
+  setIsComposingAnimating(value: boolean): void {
+    this.isComposingAnimating = value;
   }
 }
