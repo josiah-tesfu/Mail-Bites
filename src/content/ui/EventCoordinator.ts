@@ -211,6 +211,12 @@ export class EventCoordinator {
           
           // If closed box was expanded, clear expanded index
           if (this.state.getExpandedComposeIndex() === composeIndex) {
+            this.state.setExpandedComposeIndex(null);
+          }
+          
+          // If no boxes left, close composer mode
+          if (newCount === 0) {
+            this.state.setIsComposing(false);
             this.state.setExpandedComposeIndex(-1);
           }
         }
@@ -342,6 +348,10 @@ export class EventCoordinator {
       return;
     }
 
+    // Create search container
+    const searchContainer = document.createElement('div');
+    searchContainer.className = 'mail-bites-search-container';
+
     // Create search input
     const searchInput = document.createElement('input');
     searchInput.type = 'text';
@@ -349,8 +359,10 @@ export class EventCoordinator {
     searchInput.placeholder = '';
     searchInput.setAttribute('aria-label', 'Search emails');
 
-    // Replace button with input
-    button.replaceWith(searchInput);
+    searchContainer.appendChild(searchInput);
+
+    // Replace button with container
+    button.replaceWith(searchContainer);
     
     // Focus the input
     requestAnimationFrame(() => {

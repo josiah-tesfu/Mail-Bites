@@ -100,10 +100,27 @@
   pointer-events: none;
 }
 
+/* Search container for underline */
+.mail-bites-search-container {
+  position: relative;
+  display: inline-block;
+}
+
+.mail-bites-search-container::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  height: 1px;
+  width: 0;
+  background: #888888;
+  animation: mail-bites-search-underline 0.15s ease-out 0.1s forwards;
+}
+
 /* Search input styling */
 .mail-bites-search-input {
-  width: 300px;
-  height: 20px;
+  width: 400px;
+  height: 24px;
   border: none;
   background: transparent;
   font-family: 'Manrope', 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
@@ -115,6 +132,8 @@
   animation: mail-bites-search-appear 0.1s ease-in forwards;
   /* Position so caret starts at center of where button was */
   transform-origin: left center;
+  display: block;
+  box-sizing: border-box;
 }
 
 .mail-bites-search-input::placeholder {
@@ -141,10 +160,19 @@
     margin-left: 10px;
   }
   100% {
-    width: 300px;
+    width: 400px;
     opacity: 1;
     /* End at normal position */
     margin-left: 0;
+  }
+}
+
+@keyframes mail-bites-search-underline {
+  0% {
+    width: 0;
+  }
+  100% {
+    width: 100%;
   }
 }
 
