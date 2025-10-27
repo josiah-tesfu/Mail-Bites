@@ -14,10 +14,13 @@ export class UIState {
   private collapsingId: string | null = null;
   private conversationModes = new Map<string, ConversationData['mode']>();
   private isSearchActive = false;
-  private isMoreThingsExpanded = false;
   private clickOutsideHandlerAttached = false;
   private isComposing = false;
   private isComposingAnimating = false;
+  private composeBoxCount = 0;
+  private expandedComposeIndex: number | null = null;
+  private composeDrafts = new Map<number, { recipients: string; subject: string; message: string }>();
+  private sentEmails = new Set<number>();
 
   // Getters
   getContainer(): HTMLElement | null {
@@ -60,10 +63,6 @@ export class UIState {
     return this.isSearchActive;
   }
 
-  getIsMoreThingsExpanded(): boolean {
-    return this.isMoreThingsExpanded;
-  }
-
   getClickOutsideHandlerAttached(): boolean {
     return this.clickOutsideHandlerAttached;
   }
@@ -74,6 +73,22 @@ export class UIState {
 
   getIsComposingAnimating(): boolean {
     return this.isComposingAnimating;
+  }
+
+  getComposeBoxCount(): number {
+    return this.composeBoxCount;
+  }
+
+  getExpandedComposeIndex(): number | null {
+    return this.expandedComposeIndex;
+  }
+
+  getComposeDrafts(): Map<number, { recipients: string; subject: string; message: string }> {
+    return this.composeDrafts;
+  }
+
+  getSentEmails(): Set<number> {
+    return this.sentEmails;
   }
 
   // Setters
@@ -117,10 +132,6 @@ export class UIState {
     this.isSearchActive = value;
   }
 
-  setIsMoreThingsExpanded(value: boolean): void {
-    this.isMoreThingsExpanded = value;
-  }
-
   setClickOutsideHandlerAttached(value: boolean): void {
     this.clickOutsideHandlerAttached = value;
   }
@@ -131,5 +142,21 @@ export class UIState {
 
   setIsComposingAnimating(value: boolean): void {
     this.isComposingAnimating = value;
+  }
+
+  setComposeBoxCount(value: number): void {
+    this.composeBoxCount = value;
+  }
+
+  setExpandedComposeIndex(value: number | null): void {
+    this.expandedComposeIndex = value;
+  }
+
+  setComposeDrafts(value: Map<number, { recipients: string; subject: string; message: string }>): void {
+    this.composeDrafts = value;
+  }
+
+  setSentEmails(value: Set<number>): void {
+    this.sentEmails = value;
   }
 }

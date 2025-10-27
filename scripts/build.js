@@ -59,8 +59,8 @@ const STATIC_ASSETS = [
     target: path.join(EXTENSION_DIR, 'search-button.png')
   },
   {
-    source: path.join(PROJECT_ROOT, 'assets', 'icons', 'more-things.png'),
-    target: path.join(EXTENSION_DIR, 'more-things.png')
+    source: path.join(PROJECT_ROOT, 'assets', 'icons', 'close-draft.png'),
+    target: path.join(EXTENSION_DIR, 'close-draft.png')
   },
   {
     source: path.join(PROJECT_ROOT, 'assets', 'templates', 'composer-divider.html'),

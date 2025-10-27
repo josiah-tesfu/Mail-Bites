@@ -17,16 +17,25 @@ export class ResponseBoxBuilder {
    * @param conversation Conversation data (null for standalone compose)
    * @param mode Composer mode (reply, forward, or compose)
    * @param onComposerAction Callback when composer action clicked
+   * @param composeIndex Index for standalone compose boxes
+   * @param isExpanded Whether compose box is expanded
+   * @param draft Draft data for compose box
    */
   build(
     conversation: ConversationData | null,
     mode: ComposerMode,
-    onComposerAction: (type: ComposerActionType, conversation: ConversationData | null) => void
+    onComposerAction: (type: ComposerActionType, conversation: ConversationData | null, composeIndex?: number) => void,
+    composeIndex?: number,
+    isExpanded?: boolean,
+    draft?: { recipients: string; subject: string; message: string }
   ): HTMLElement {
     const box = document.createElement('div');
     box.className = 'mail-bites-response-box mail-bites-anim-bezel-surface';
     if (conversation) {
       box.dataset.conversationId = conversation.id;
+    }
+    if (composeIndex !== undefined) {
+      box.dataset.composeIndex = String(composeIndex);
     }
     box.dataset.responseMode = mode;
     
@@ -34,23 +43,54 @@ export class ResponseBoxBuilder {
       box.classList.remove('mail-bites-anim-bezel-surface');
     }, { once: true });
     
-    const recipientsSection = this.buildFieldSection('Recipients', 'recipients');
-    const subjectSection = this.buildFieldSection('Subject', 'subject');
-    const messageSection = this.buildMessageSection();
-    const actions = this.buildComposerActions(conversation, onComposerAction);
-    
-    box.appendChild(recipientsSection);
-    box.appendChild(subjectSection);
-    box.appendChild(messageSection);
-    box.appendChild(actions);
+    if (isExpanded === false) {
+      // Build collapsed draft view
+      box.classList.add('is-collapsed');
+      const header = this.buildCollapsedDraftHeader(draft);
+      box.appendChild(header);
+    } else {
+      // Build full composer
+      const recipientsSection = this.buildFieldSection('Recipients', 'recipients', draft?.recipients);
+      const subjectSection = this.buildFieldSection('Subject', 'subject', draft?.subject);
+      const messageSection = this.buildMessageSection(draft?.message);
+      const actions = this.buildComposerActions(conversation, onComposerAction, composeIndex);
+      
+      box.appendChild(recipientsSection);
+      box.appendChild(subjectSection);
+      box.appendChild(messageSection);
+      box.appendChild(actions);
+    }
     
     return box;
   }
 
   /**
+   * Build collapsed draft header
+   */
+  private buildCollapsedDraftHeader(draft?: { recipients: string; subject: string; message: string }): HTMLElement {
+    const header = document.createElement('div');
+    header.className = 'mail-bites-composer-collapsed-header';
+    
+    const recipients = draft?.recipients || '';
+    const subject = draft?.subject || '';
+    
+    const recipientsEl = document.createElement('div');
+    recipientsEl.className = 'mail-bites-composer-collapsed-recipients';
+    recipientsEl.textContent = recipients || '\u00A0'; // Non-breaking space if empty
+    header.appendChild(recipientsEl);
+    
+    const subjectEl = document.createElement('div');
+    subjectEl.className = 'mail-bites-composer-collapsed-subject';
+    subjectEl.textContent = subject || '\u00A0'; // Non-breaking space if empty
+    header.appendChild(subjectEl);
+    
+    return header;
+  }
+
+  /**
    * Build field section (Recipients or Subject)
    */
-  private buildFieldSection(label: string, fieldName: string): HTMLElement {
+  private buildFieldSection(label: string, fieldName: string, defaultValue?: string): HTMLElement {
     const section = document.createElement('div');
     section.className = 'mail-bites-composer-section';
     
@@ -68,6 +108,9 @@ export class ResponseBoxBuilder {
     input.className = 'mail-bites-composer-input';
     input.setAttribute('aria-label', label);
     input.name = fieldName;
+    if (defaultValue) {
+      input.value = defaultValue;
+    }
     
     // Hide label when input has value
     input.addEventListener('input', () => {
@@ -77,6 +120,11 @@ export class ResponseBoxBuilder {
         wrapper.classList.remove('has-value');
       }
     });
+    
+    // Set initial has-value state
+    if (defaultValue && defaultValue.length > 0) {
+      wrapper.classList.add('has-value');
+    }
     
     wrapper.appendChild(labelEl);
     wrapper.appendChild(input);
@@ -88,13 +136,30 @@ export class ResponseBoxBuilder {
   /**
    * Build message section
    */
-  private buildMessageSection(): HTMLElement {
+  private buildMessageSection(defaultValue?: string): HTMLElement {
     const section = document.createElement('div');
     section.className = 'mail-bites-composer-section';
     
     const textarea = document.createElement('textarea');
     textarea.className = 'mail-bites-composer-textarea';
     textarea.setAttribute('aria-label', 'Message body');
+    if (defaultValue) {
+      textarea.value = defaultValue;
+    }
+    
+    // Auto-resize textarea on input
+    textarea.addEventListener('input', () => {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    });
+    
+    // Set initial height if there's a default value
+    if (defaultValue) {
+      requestAnimationFrame(() => {
+        textarea.style.height = 'auto';
+        textarea.style.height = `${textarea.scrollHeight}px`;
+      });
+    }
     
     section.appendChild(textarea);
     
@@ -118,13 +183,14 @@ export class ResponseBoxBuilder {
    */
   private buildComposerActions(
     conversation: ConversationData | null,
-    onAction: (type: ComposerActionType, conversation: ConversationData | null) => void
+    onAction: (type: ComposerActionType, conversation: ConversationData | null, composeIndex?: number) => void,
+    composeIndex?: number
   ): HTMLElement {
     const container = document.createElement('div');
     container.className = 'mail-bites-action-row mail-bites-action-row--composer';
 
-    const sendButton = this.buildComposerActionButton('send', conversation, onAction);
-    const deleteButton = this.buildComposerActionButton('delete', conversation, onAction);
+    const sendButton = this.buildComposerActionButton('send', conversation, onAction, composeIndex);
+    const deleteButton = this.buildComposerActionButton('delete', conversation, onAction, composeIndex);
 
     container.appendChild(sendButton);
     container.appendChild(deleteButton);
@@ -138,7 +204,8 @@ export class ResponseBoxBuilder {
   private buildComposerActionButton(
     type: ComposerActionType,
     conversation: ConversationData | null,
-    onAction: (type: ComposerActionType, conversation: ConversationData | null) => void
+    onAction: (type: ComposerActionType, conversation: ConversationData | null, composeIndex?: number) => void,
+    composeIndex?: number
   ): HTMLButtonElement {
     const button = document.createElement('button');
     button.type = 'button';
@@ -157,7 +224,7 @@ export class ResponseBoxBuilder {
     button.addEventListener('click', (event) => {
       event.stopPropagation();
       event.preventDefault();
-      onAction(type, conversation);
+      onAction(type, conversation, composeIndex);
     });
 
     return button;

@@ -12,6 +12,8 @@ import { logger } from '../logger.js';
  * Phase 4.4: Added toolbar event handlers
  */
 export class EventCoordinator {
+  private mouseDownTarget: HTMLElement | null = null;
+
   constructor(
     private state: UIState,
     private animator: AnimationController,
@@ -185,10 +187,10 @@ export class EventCoordinator {
   /**
    * Phase 4.3: Handle composer action clicks (send/delete)
    */
-  handleComposerActionClick(type: ComposerActionType, conversation: ConversationData | null): void {
+  handleComposerActionClick(type: ComposerActionType, conversation: ConversationData | null, composeIndex?: number): void {
     if (type === 'delete') {
       if (conversation) {
-        // Deleting from reply/forward composer - revert to read mode
+        // Closing reply/forward composer - revert to read mode
         const conversationModes = this.state.getConversationModes();
         conversationModes.set(conversation.id, 'read');
         this.state.setConversationModes(conversationModes);
@@ -197,12 +199,69 @@ export class EventCoordinator {
         this.state.setHighlightedId(conversation.id);
         this.state.setPendingHoverId(conversation.id);
       } else {
-        // Deleting standalone compose box
-        this.state.setIsComposing(false);
+        // Closing standalone compose box - save draft and remove box
+        if (composeIndex !== undefined) {
+          // Save draft before closing
+          this.saveDraft(composeIndex);
+          
+          // Decrement count to remove box
+          const currentCount = this.state.getComposeBoxCount();
+          const newCount = Math.max(0, currentCount - 1);
+          this.state.setComposeBoxCount(newCount);
+          
+          // If closed box was expanded, clear expanded index
+          if (this.state.getExpandedComposeIndex() === composeIndex) {
+            this.state.setExpandedComposeIndex(-1);
+          }
+        }
+      }
+      this.triggerRender();
+    } else if (type === 'send') {
+      // Handle send action
+      if (composeIndex !== undefined) {
+        // Mark as sent
+        const sentEmails = this.state.getSentEmails();
+        sentEmails.add(composeIndex);
+        this.state.setSentEmails(sentEmails);
+        
+        // Remove draft
+        const composeDrafts = this.state.getComposeDrafts();
+        composeDrafts.delete(composeIndex);
+        this.state.setComposeDrafts(composeDrafts);
+        
+        // Decrement count
+        const currentCount = this.state.getComposeBoxCount();
+        const newCount = Math.max(0, currentCount - 1);
+        this.state.setComposeBoxCount(newCount);
+        
+        // If sent box was expanded, clear expanded index
+        if (this.state.getExpandedComposeIndex() === composeIndex) {
+          this.state.setExpandedComposeIndex(null);
+        }
+        
+        // If no boxes left, close composer mode
+        if (newCount === 0) {
+          this.state.setIsComposing(false);
+          this.state.setExpandedComposeIndex(-1);
+          
+          // Animate button back
+          const btn = this.state.getContainer()?.querySelector<HTMLButtonElement>(
+            '.mail-bites-toolbar-action-new-email'
+          );
+          if (btn && btn.classList.contains('is-rotated')) {
+            this.state.setIsComposingAnimating(true);
+            btn.classList.add('mail-bites-anim-rotate-open');
+            
+            btn.addEventListener('animationend', () => {
+              btn.classList.remove('mail-bites-anim-rotate-open');
+              btn.classList.remove('is-rotated');
+              this.state.setIsComposingAnimating(false);
+            }, { once: true });
+          }
+        }
       }
       this.triggerRender();
     }
-    // TODO: Handle 'send' type
   }
 
   /**
@@ -213,77 +272,39 @@ export class EventCoordinator {
       '.mail-bites-toolbar-action-new-email'
     );
     
-    const willBeComposing = !this.state.getIsComposing();
+    // Always add a new compose box
+    const currentCount = this.state.getComposeBoxCount();
+    const newIndex = currentCount;
+    this.state.setComposeBoxCount(currentCount + 1);
+    
+    // Set the new box as expanded
+    this.state.setExpandedComposeIndex(newIndex);
+    
+    if (!this.state.getIsComposing()) {
+      this.state.setIsComposing(true);
+    }
+    
+    this.triggerRender();
     
     if (!newEmailButton) {
-      this.state.setIsComposing(willBeComposing);
-      this.triggerRender();
       return;
     }
 
-    if (willBeComposing) {
-      // Opening: open box immediately then animate
-      this.state.setIsComposing(true);
-      this.triggerRender();
-      
-      // Start animation after render
-      requestAnimationFrame(() => {
-        const btn = this.state.getContainer()?.querySelector<HTMLButtonElement>(
-          '.mail-bites-toolbar-action-new-email'
-        );
-        if (btn) {
-          this.state.setIsComposingAnimating(true);
-          btn.classList.add('mail-bites-anim-rotate-close');
-          
-          btn.addEventListener('animationend', () => {
-            btn.classList.remove('mail-bites-anim-rotate-close');
-            btn.classList.add('is-rotated');
-            this.state.setIsComposingAnimating(false);
-          }, { once: true });
-        }
-      });
-    } else {
-      // Closing: close box immediately then animate
-      this.state.setIsComposing(false);
-      this.triggerRender();
-      
-      // Start animation after render
-      requestAnimationFrame(() => {
-        const btn = this.state.getContainer()?.querySelector<HTMLButtonElement>(
-          '.mail-bites-toolbar-action-new-email'
-        );
-        if (btn) {
-          this.state.setIsComposingAnimating(true);
-          btn.classList.add('mail-bites-anim-rotate-open');
-          
-          btn.addEventListener('animationend', () => {
-            btn.classList.remove('mail-bites-anim-rotate-open');
-            btn.classList.remove('is-rotated');
-            this.state.setIsComposingAnimating(false);
-          }, { once: true });
-        }
-      });
-    }
-  }
-
-  /**
-   * Phase 4.4: Handle more-things button click
-   */
-  handleMoreThingsClick(button: HTMLButtonElement): void {
-    if (this.state.getIsMoreThingsExpanded()) {
-      return;
-    }
-
-    // Cancel any previous more-things animation
-    this.animator.cancelAnimation('more-things-icon-show');
-
-    // Add animation class for sliding right and fading out
-    button.classList.add('is-sliding-out');
-    
-    // Start showing icons halfway through button slide-out
-    this.animator.scheduleMoreThingsIconShow(() => {
-      this.state.setIsMoreThingsExpanded(true);
-      this.triggerRender();
+    // Animate button rotation
+    requestAnimationFrame(() => {
+      const btn = this.state.getContainer()?.querySelector<HTMLButtonElement>(
+        '.mail-bites-toolbar-action-new-email'
+      );
+      if (btn && !this.state.getIsComposingAnimating()) {
+        this.state.setIsComposingAnimating(true);
+        btn.classList.add('mail-bites-anim-rotate-close');
+        
+        btn.addEventListener('animationend', () => {
+          btn.classList.remove('mail-bites-anim-rotate-close');
+          btn.classList.add('is-rotated');
+          this.state.setIsComposingAnimating(false);
+        }, { once: true });
+      }
     });
   }
 
@@ -360,14 +381,8 @@ export class EventCoordinator {
     this.animator.cancelAnimation('search-transform');
     this.animator.cancelAnimation('search-restore');
 
-    // Note: We manually rebuild the toolbar here instead of calling triggerRender()
-    // because we want to add the appearing animation class to the search button.
-    // The event handlers will be attached when the user next interacts with the toolbar,
-    // or we can trigger a full re-render after replacing the toolbar.
     const newToolbar = this.toolbarBuilder.build(
-      this.state.getIsMoreThingsExpanded(),
-      () => {}, // No-op: toolbar will be replaced on next render
-      () => {}  // No-op: toolbar will be replaced on next render
+      (type, button) => {} // No-op: toolbar will be replaced on next render
     );
     const searchButton = newToolbar.querySelector('.mail-bites-toolbar-action-search');
     
@@ -389,6 +404,22 @@ export class EventCoordinator {
    */
   handleClickOutside(event: MouseEvent, overlayRoot: HTMLElement): void {
     const target = event.target as HTMLElement;
+    
+    // Don't collapse if clicking a composer action button
+    const composerAction = target.closest('.mail-bites-action-button');
+    if (composerAction) {
+      return;
+    }
+    
+    // Check if mousedown started inside a compose box or email item
+    const mouseDownInItem = this.mouseDownTarget?.closest('.mail-bites-item');
+    const mouseDownInResponseBox = this.mouseDownTarget?.closest('.mail-bites-response-box');
+    
+    // If mousedown was inside, don't collapse (user is dragging)
+    if (mouseDownInItem || mouseDownInResponseBox) {
+      return;
+    }
+    
     const closestItem = target.closest('.mail-bites-item');
     const closestResponseBox = target.closest('.mail-bites-response-box');
     
@@ -397,31 +428,15 @@ export class EventCoordinator {
       return;
     }
     
-    // Close compose box if open
-    if (this.state.getIsComposing()) {
-      logger.info('Closing compose box via click-outside');
+    // Collapse all compose boxes if any are open
+    if (this.state.getIsComposing() && this.state.getExpandedComposeIndex() !== -1) {
+      // Save all drafts before collapsing
+      logger.info('Collapsing compose boxes via click-outside');
+      this.saveDraftsBeforeCollapse();
       
-      // Close box immediately
-      this.state.setIsComposing(false);
+      // Set to -1 to collapse all (no box matches index -1)
+      this.state.setExpandedComposeIndex(-1);
       this.triggerRender();
-      
-      // Start animation after render
-      requestAnimationFrame(() => {
-        const newEmailButton = this.state.getContainer()?.querySelector<HTMLButtonElement>(
-          '.mail-bites-toolbar-action-new-email'
-        );
-        
-        if (newEmailButton) {
-          this.state.setIsComposingAnimating(true);
-          newEmailButton.classList.add('mail-bites-anim-rotate-open');
-          
-          newEmailButton.addEventListener('animationend', () => {
-            newEmailButton.classList.remove('mail-bites-anim-rotate-open');
-            newEmailButton.classList.remove('is-rotated');
-            this.state.setIsComposingAnimating(false);
-          }, { once: true });
-        }
-      });
       return;
     }
     
@@ -444,9 +459,115 @@ export class EventCoordinator {
     }
 
     logger.info('Attaching click-outside handler to overlay root');
+    
+    // Track mousedown target to prevent collapse on drag
+    overlayRoot.addEventListener('mousedown', (event) => {
+      this.mouseDownTarget = event.target as HTMLElement;
+    });
+    
     overlayRoot.addEventListener('click', (event) => {
       this.handleClickOutside(event, overlayRoot);
+      this.handleComposeBoxClick(event);
     });
     this.state.setClickOutsideHandlerAttached(true);
   }
+
+  /**
+   * Handle compose box click to toggle expansion
+   */
+  private handleComposeBoxClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    const composeBox = target.closest('.mail-bites-response-box');
+    
+    if (!composeBox) {
+      return;
+    }
+    
+    const composeIndexStr = (composeBox as HTMLElement).dataset.composeIndex;
+    if (composeIndexStr === undefined) {
+      return;
+    }
+    
+    const composeIndex = parseInt(composeIndexStr, 10);
+    const currentExpandedIndex = this.state.getExpandedComposeIndex();
+    
+    // If clicking collapsed header, expand this box
+    const collapsedHeader = target.closest('.mail-bites-composer-collapsed-header');
+    if (collapsedHeader) {
+      event.stopPropagation();
+      
+      if (currentExpandedIndex === composeIndex) {
+        // Already expanded, do nothing
+        return;
+      }
+      
+      // Save draft for currently expanded box
+      if (currentExpandedIndex !== null) {
+        this.saveDraft(currentExpandedIndex);
+      }
+      
+      // Expand this box
+      this.state.setExpandedComposeIndex(composeIndex);
+      this.triggerRender();
+    }
+  }
+
+  /**
+   * Save draft for a specific compose box
+   */
+  private saveDraft(composeIndex: number): void {
+    const container = this.state.getContainer();
+    if (!container) {
+      return;
+    }
+    
+    const composeBox = container.querySelector(
+      `.mail-bites-response-box[data-compose-index="${composeIndex}"]`
+    ) as HTMLElement;
+    
+    if (!composeBox) {
+      return;
+    }
+    
+    const recipientsInput = composeBox.querySelector<HTMLInputElement>(
+      'input[name="recipients"]'
+    );
+    const subjectInput = composeBox.querySelector<HTMLInputElement>(
+      'input[name="subject"]'
+    );
+    const messageTextarea = composeBox.querySelector<HTMLTextAreaElement>(
+      '.mail-bites-composer-textarea'
+    );
+    
+    const draft = {
+      recipients: recipientsInput?.value || '',
+      subject: subjectInput?.value || '',
+      message: messageTextarea?.value || ''
+    };
+    
+    const composeDrafts = this.state.getComposeDrafts();
+    composeDrafts.set(composeIndex, draft);
+    this.state.setComposeDrafts(composeDrafts);
+  }
+
+  /**
+   * Save drafts for all expanded compose boxes before collapse
+   */
+  private saveDraftsBeforeCollapse(): void {
+    const container = this.state.getContainer();
+    if (!container) {
+      return;
+    }
+    
+    const composeBoxes = container.querySelectorAll('.mail-bites-response-box[data-compose-index]');
+    
+    composeBoxes.forEach((box) => {
+      const composeIndexStr = (box as HTMLElement).dataset.composeIndex;
+      if (composeIndexStr !== undefined) {
+        const composeIndex = parseInt(composeIndexStr, 10);
+        this.saveDraft(composeIndex);
+      }
+    });
+  }
 }
+

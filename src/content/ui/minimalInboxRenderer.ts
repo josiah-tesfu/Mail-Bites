@@ -105,6 +105,16 @@ export class MinimalInboxRenderer {
     this.state.setConversations([]); // Phase 1.5: Write to UIState only
     this.state.setHighlightedId(null); // Phase 1.5: Write to UIState only
     this.state.setIsComposing(false);
+    this.state.setComposeBoxCount(0);
+    this.state.setExpandedComposeIndex(-1);
+    
+    const composeDrafts = this.state.getComposeDrafts();
+    composeDrafts.clear();
+    this.state.setComposeDrafts(composeDrafts);
+    
+    const sentEmails = this.state.getSentEmails();
+    sentEmails.clear();
+    this.state.setSentEmails(sentEmails);
     
     const dismissedIds = this.state.getDismissedIds(); // Phase 1.5: Read from UIState
     dismissedIds.clear();
@@ -117,7 +127,6 @@ export class MinimalInboxRenderer {
     this.state.setConversationModes(conversationModes); // Phase 1.5: Write to UIState
     
     this.state.setIsSearchActive(false); // Phase 1.5: Write to UIState only
-    this.state.setIsMoreThingsExpanded(false); // Phase 1.5: Write to UIState only
     if (this.state.getContainer()) {
       this.state.getContainer()!.classList.remove('has-highlight');
       delete this.state.getContainer()!.dataset.highlightId;
@@ -161,9 +170,14 @@ export class MinimalInboxRenderer {
     const toolbarToReuse = shouldPreserveToolbar ? existingToolbar : null;
     
     container.innerHTML = '';
+    
+    // Only show highlight if there's an expanded email or expanded compose box
+    const hasExpandedEmail = Boolean(this.state.getHighlightedId());
+    const hasExpandedCompose = this.state.getIsComposing() && this.state.getExpandedComposeIndex() !== -1;
+    
     container.classList.toggle(
       'has-highlight',
-      Boolean(this.state.getHighlightedId() || this.state.getIsComposing()) // Phase 1.5: Read from UIState
+      hasExpandedEmail || hasExpandedCompose
     );
     container.classList.toggle(
       'is-composing-animating',
@@ -180,10 +194,18 @@ export class MinimalInboxRenderer {
     
     container.appendChild(toolbar);
 
-    // Render standalone compose box if active
+    // Render standalone compose boxes
     if (this.state.getIsComposing()) {
-      const composeBox = this.buildComposeBox();
-      container.appendChild(composeBox);
+      const composeBoxCount = this.state.getComposeBoxCount();
+      const expandedComposeIndex = this.state.getExpandedComposeIndex();
+      const composeDrafts = this.state.getComposeDrafts();
+      
+      for (let i = 0; i < composeBoxCount; i++) {
+        const isExpanded = expandedComposeIndex === i;
+        const draft = composeDrafts.get(i);
+        const composeBox = this.buildComposeBox(i, isExpanded, draft);
+        container.appendChild(composeBox);
+      }
     }
 
     if (this.state.getConversations().length === 0) { // Phase 1.5: Read from UIState
@@ -293,18 +315,21 @@ export class MinimalInboxRenderer {
   }
 
   // Build standalone compose box
-  private buildComposeBox(): HTMLElement {
+  private buildComposeBox(composeIndex: number, isExpanded?: boolean, draft?: { recipients: string; subject: string; message: string }): HTMLElement {
     return this.responseBoxBuilder.build(
       null,
       'compose',
-      (type: ComposerActionType, conv: ConversationData | null) => this.handleComposerAction(type, conv)
+      (type: ComposerActionType, conv: ConversationData | null, idx?: number) => this.handleComposerAction(type, conv, idx),
+      composeIndex,
+      isExpanded,
+      draft
     );
   }
 
   // Phase 3.7: Composer action coordinator
   // Phase 4.3: Delegate to EventCoordinator.handleComposerActionClick()
-  private handleComposerAction(type: ComposerActionType, conversation: ConversationData | null): void {
-    this.eventCoordinator.handleComposerActionClick(type, conversation);
+  private handleComposerAction(type: ComposerActionType, conversation: ConversationData | null, composeIndex?: number): void {
+    this.eventCoordinator.handleComposerActionClick(type, conversation, composeIndex);
   }
 
   // Phase 3.7: buildComposerActions and buildComposerActionButton moved to ResponseBoxBuilder
@@ -312,9 +337,7 @@ export class MinimalInboxRenderer {
   // Phase 3.6: Delegate to ToolbarBuilder.build()
   private buildToolbar(): HTMLElement {
     return this.toolbarBuilder.build(
-      this.state.getIsMoreThingsExpanded(),
-      (type, button) => this.handleToolbarButtonClick(type, button),
-      (button) => this.handleExpandedIconClick(button)
+      (type, button) => this.handleToolbarButtonClick(type, button)
     );
   }
 
@@ -328,20 +351,9 @@ export class MinimalInboxRenderer {
     
     if (type === 'search') {
       this.eventCoordinator.handleSearchButtonClick(button);
-    } else if (type === 'more-things') {
-      this.eventCoordinator.handleMoreThingsClick(button);
     } else if (type === 'new-email') {
       this.eventCoordinator.handleNewEmailClick();
     }
-  }
-
-  // Phase 3.6: Expanded icon click coordinator
-  private handleExpandedIconClick(button: HTMLButtonElement): void {
-    // Collapse any expanded email when clicking toolbar buttons
-    if (this.state.getExpandedId()) {
-      this.toggle(this.state.getExpandedId()!);
-    }
-    // TODO: Add specific action for each icon
   }
 
   // Phase 3.6: buildToolbarButton and buildExpandedIcon moved to ToolbarBuilder

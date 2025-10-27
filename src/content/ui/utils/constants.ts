@@ -22,24 +22,22 @@ export const PREVIEW_ACTION_LABELS: Record<PreviewActionType, string> = {
 
 export const COMPOSER_ACTION_ICON_MAP: Record<ComposerActionType, string> = {
   send: 'send-button.png',
-  delete: 'delete-button.png'
+  delete: 'close-draft.png'
 };
 
 export const COMPOSER_ACTION_LABELS: Record<ComposerActionType, string> = {
   send: 'Send message',
-  delete: 'Discard message'
+  delete: 'Close draft'
 };
 
 export const TOOLBAR_ACTION_ICON_MAP: Record<ToolbarActionType, string> = {
   'new-email': 'new-email-button.png',
-  search: 'search-button.png',
-  'more-things': 'more-things.png'
+  search: 'search-button.png'
 };
 
 export const TOOLBAR_ACTION_LABELS: Record<ToolbarActionType, string> = {
   'new-email': 'Compose new email',
-  search: 'Search emails',
-  'more-things': 'More actions'
+  search: 'Search emails'
 };
 
 export function resolveAssetPath(filename: string): string {

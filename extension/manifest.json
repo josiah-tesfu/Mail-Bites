@@ -34,7 +34,7 @@
         "send-button.png",
         "new-email-button.png",
         "search-button.png",
-        "more-things.png"
+        "close-draft.png"
       ],
       "matches": [
         "https://mail.google.com/*"
