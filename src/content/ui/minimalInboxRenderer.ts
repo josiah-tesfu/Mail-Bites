@@ -344,6 +344,14 @@ export class MinimalInboxRenderer {
   // Phase 3.6: Toolbar button click coordinator
   // Phase 4.4: Delegate to EventCoordinator
   private handleToolbarButtonClick(type: ToolbarActionType, button: HTMLButtonElement): void {
+    // Close search if active
+    if (this.state.getIsSearchActive()) {
+      const searchInput = this.state.getContainer()?.querySelector('.mail-bites-search-input') as HTMLInputElement;
+      if (searchInput) {
+        this.eventCoordinator.handleSearchClose(searchInput);
+      }
+    }
+    
     // Collapse any expanded email when clicking toolbar buttons
     if (this.state.getExpandedId()) {
       this.toggle(this.state.getExpandedId()!);
@@ -353,6 +361,8 @@ export class MinimalInboxRenderer {
       this.eventCoordinator.handleSearchButtonClick(button);
     } else if (type === 'new-email') {
       this.eventCoordinator.handleNewEmailClick();
+    } else if (type === 'unread' || type === 'read') {
+      this.eventCoordinator.handleFilterButtonClick(type, button);
     }
   }
 

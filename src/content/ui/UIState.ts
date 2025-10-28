@@ -14,6 +14,7 @@ export class UIState {
   private collapsingId: string | null = null;
   private conversationModes = new Map<string, ConversationData['mode']>();
   private isSearchActive = false;
+  private searchQuery = '';
   private clickOutsideHandlerAttached = false;
   private isComposing = false;
   private isComposingAnimating = false;
@@ -21,6 +22,7 @@ export class UIState {
   private expandedComposeIndex: number | null = null;
   private composeDrafts = new Map<number, { recipients: string; subject: string; message: string }>();
   private sentEmails = new Set<number>();
+  private isFilterCollapsed = true;
 
   // Getters
   getContainer(): HTMLElement | null {
@@ -63,6 +65,10 @@ export class UIState {
     return this.isSearchActive;
   }
 
+  getSearchQuery(): string {
+    return this.searchQuery;
+  }
+
   getClickOutsideHandlerAttached(): boolean {
     return this.clickOutsideHandlerAttached;
   }
@@ -89,6 +95,10 @@ export class UIState {
 
   getSentEmails(): Set<number> {
     return this.sentEmails;
+  }
+
+  getIsFilterCollapsed(): boolean {
+    return this.isFilterCollapsed;
   }
 
   // Setters
@@ -132,6 +142,10 @@ export class UIState {
     this.isSearchActive = value;
   }
 
+  setSearchQuery(value: string): void {
+    this.searchQuery = value;
+  }
+
   setClickOutsideHandlerAttached(value: boolean): void {
     this.clickOutsideHandlerAttached = value;
   }
@@ -158,5 +172,9 @@ export class UIState {
 
   setSentEmails(value: Set<number>): void {
     this.sentEmails = value;
+  }
+
+  setIsFilterCollapsed(value: boolean): void {
+    this.isFilterCollapsed = value;
   }
 }

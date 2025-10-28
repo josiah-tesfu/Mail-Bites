@@ -31,36 +31,36 @@ const ADDITIONAL_CSS = [
 ];
 const STATIC_ASSETS = [
   {
-    source: path.join(PROJECT_ROOT, 'assets', 'icons', 'archive-button.png'),
-    target: path.join(EXTENSION_DIR, 'archive-button.png')
+    source: path.join(PROJECT_ROOT, 'assets', 'icons', 'archive-button.svg'),
+    target: path.join(EXTENSION_DIR, 'archive-button.svg')
   },
   {
-    source: path.join(PROJECT_ROOT, 'assets', 'icons', 'delete-button.png'),
-    target: path.join(EXTENSION_DIR, 'delete-button.png')
+    source: path.join(PROJECT_ROOT, 'assets', 'icons', 'delete-button.svg'),
+    target: path.join(EXTENSION_DIR, 'delete-button.svg')
   },
   {
-    source: path.join(PROJECT_ROOT, 'assets', 'icons', 'reply-button.png'),
-    target: path.join(EXTENSION_DIR, 'reply-button.png')
+    source: path.join(PROJECT_ROOT, 'assets', 'icons', 'reply-button.svg'),
+    target: path.join(EXTENSION_DIR, 'reply-button.svg')
   },
   {
-    source: path.join(PROJECT_ROOT, 'assets', 'icons', 'forward-button.png'),
-    target: path.join(EXTENSION_DIR, 'forward-button.png')
+    source: path.join(PROJECT_ROOT, 'assets', 'icons', 'forward-button.svg'),
+    target: path.join(EXTENSION_DIR, 'forward-button.svg')
   },
   {
-    source: path.join(PROJECT_ROOT, 'assets', 'icons', 'send-button.png'),
-    target: path.join(EXTENSION_DIR, 'send-button.png')
+    source: path.join(PROJECT_ROOT, 'assets', 'icons', 'send-button.svg'),
+    target: path.join(EXTENSION_DIR, 'send-button.svg')
   },
   {
-    source: path.join(PROJECT_ROOT, 'assets', 'icons', 'new-email-button.png'),
-    target: path.join(EXTENSION_DIR, 'new-email-button.png')
+    source: path.join(PROJECT_ROOT, 'assets', 'icons', 'new-email-button.svg'),
+    target: path.join(EXTENSION_DIR, 'new-email-button.svg')
   },
   {
-    source: path.join(PROJECT_ROOT, 'assets', 'icons', 'search-button.png'),
-    target: path.join(EXTENSION_DIR, 'search-button.png')
+    source: path.join(PROJECT_ROOT, 'assets', 'icons', 'search-button.svg'),
+    target: path.join(EXTENSION_DIR, 'search-button.svg')
   },
   {
-    source: path.join(PROJECT_ROOT, 'assets', 'icons', 'close-draft.png'),
-    target: path.join(EXTENSION_DIR, 'close-draft.png')
+    source: path.join(PROJECT_ROOT, 'assets', 'icons', 'close-draft.svg'),
+    target: path.join(EXTENSION_DIR, 'close-draft.svg')
   },
   {
     source: path.join(PROJECT_ROOT, 'assets', 'templates', 'composer-divider.html'),

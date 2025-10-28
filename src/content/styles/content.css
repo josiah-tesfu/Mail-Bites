@@ -35,8 +35,44 @@
   display: flex;
   gap: 20px;
   margin-bottom: 24px;
-  align-items: center;
+  align-items: flex-end;
   padding-left: 20px;
+}
+
+.mail-bites-toolbar-divider {
+  width: 1px;
+  height: 24px;
+  background: #000000;
+  flex-shrink: 0;
+}
+
+.mail-bites-toolbar-divider,
+.mail-bites-toolbar .mail-bites-toolbar-action-read,
+.mail-bites-toolbar .mail-bites-toolbar-action-draft {
+  overflow: hidden;
+  max-width: 0;
+  opacity: 0;
+  transform: translateX(-20px) scaleX(0);
+  transition: none;
+}
+
+/* Expanded state */
+.mail-bites-toolbar-divider.is-filter-expanded,
+.mail-bites-toolbar .mail-bites-toolbar-action-read.is-filter-expanded,
+.mail-bites-toolbar .mail-bites-toolbar-action-draft.is-filter-expanded {
+  max-width: 100px;
+  opacity: 0.4;
+  transform: translateX(0) scaleX(1);
+}
+
+.mail-bites-toolbar-divider.is-filter-collapsing,
+.mail-bites-toolbar .mail-bites-action.is-filter-collapsing {
+  animation: mail-bites-filter-collapse 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.mail-bites-toolbar-divider.is-filter-expanding,
+.mail-bites-toolbar .mail-bites-action.is-filter-expanding {
+  animation: mail-bites-filter-expand 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .mail-bites-toolbar .mail-bites-action {
@@ -67,6 +103,18 @@
   display: block;
   filter: none;
   transition: transform 0.3s ease-in;
+}
+
+.mail-bites-toolbar .mail-bites-toolbar-action-read,
+.mail-bites-toolbar .mail-bites-toolbar-action-unread {
+  width: 26px;
+  height: auto;
+}
+
+.mail-bites-toolbar .mail-bites-toolbar-action-read img,
+.mail-bites-toolbar .mail-bites-toolbar-action-unread img {
+  width: 26px;
+  height: auto;
 }
 
 .mail-bites-toolbar .mail-bites-action:hover {
@@ -100,6 +148,33 @@
   pointer-events: none;
 }
 
+/* Filter collapse/expand animations */
+@keyframes mail-bites-filter-collapse {
+  0% {
+    opacity: 0.4;
+    transform: translateX(0) scaleX(1);
+    max-width: 100px;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-20px) scaleX(0);
+    max-width: 0;
+  }
+}
+
+@keyframes mail-bites-filter-expand {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px) scaleX(0);
+    max-width: 0;
+  }
+  100% {
+    opacity: 0.4;
+    transform: translateX(0) scaleX(1);
+    max-width: 100px;
+  }
+}
+
 /* Search container for underline */
 .mail-bites-search-container {
   position: relative;
@@ -113,7 +188,7 @@
   left: 0;
   height: 1px;
   width: 0;
-  background: #888888;
+  background: linear-gradient(to right, #888888 0%, #888888 70%, transparent 100%);
   animation: mail-bites-search-underline 0.15s ease-out 0.1s forwards;
 }
 

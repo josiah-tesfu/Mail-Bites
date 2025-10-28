@@ -22,11 +22,28 @@ export class ToolbarBuilder {
 
     const newEmailButton = this.buildToolbarButton('new-email', onButtonClick);
     const searchButton = this.buildToolbarButton('search', onButtonClick);
+    const unreadButton = this.buildToolbarButton('unread', onButtonClick);
+    const divider = this.buildDivider();
+    const readButton = this.buildToolbarButton('read', onButtonClick);
+    const draftButton = this.buildToolbarButton('draft', onButtonClick);
 
     toolbar.appendChild(newEmailButton);
     toolbar.appendChild(searchButton);
+    toolbar.appendChild(unreadButton);
+    toolbar.appendChild(divider);
+    toolbar.appendChild(readButton);
+    toolbar.appendChild(draftButton);
 
     return toolbar;
+  }
+
+  /**
+   * Build vertical divider
+   */
+  private buildDivider(): HTMLElement {
+    const divider = document.createElement('div');
+    divider.className = 'mail-bites-toolbar-divider';
+    return divider;
   }
 
   /**

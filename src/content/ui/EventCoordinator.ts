@@ -22,11 +22,16 @@ export class EventCoordinator {
   ) {}
 
   /**
-   * Phase 4.2: Handle conversation item click (toggle expand/collapse)
+   * Phase 4.2: Handle conversation item click to toggle expansion
    */
   handleItemClick(conversationId: string): void {
-    // Cancel any ongoing collapse animation before toggling
-    this.animator.cancelAnimation('collapse-timeout');
+    // Close search if active
+    if (this.state.getIsSearchActive()) {
+      const searchInput = this.state.getContainer()?.querySelector('.mail-bites-search-input') as HTMLInputElement;
+      if (searchInput) {
+        this.handleSearchClose(searchInput);
+      }
+    }
     
     const article = this.state.getContainer()?.querySelector<HTMLElement>(
       `article.mail-bites-item[data-conversation-id="${conversationId}"]`
@@ -315,6 +320,45 @@ export class EventCoordinator {
   }
 
   /**
+   * Filter conversations without re-rendering
+   */
+  private filterConversations(): void {
+    const container = this.state.getContainer();
+    if (!container) {
+      return;
+    }
+
+    const query = this.state.getSearchQuery().toLowerCase().trim();
+    const items = container.querySelectorAll('.mail-bites-item');
+    
+    items.forEach((item) => {
+      const conversationId = (item as HTMLElement).dataset.conversationId;
+      if (!conversationId) {
+        return;
+      }
+      
+      const conversation = this.state.getConversations().find(c => c.id === conversationId);
+      if (!conversation) {
+        return;
+      }
+      
+      const matches = !query || this.matchesSearchQuery(conversation, query);
+      (item as HTMLElement).style.display = matches ? '' : 'none';
+    });
+  }
+
+  /**
+   * Check if conversation matches search query
+   */
+  private matchesSearchQuery(conversation: ConversationData, query: string): boolean {
+    const sender = conversation.sender.toLowerCase();
+    const subject = conversation.subject.toLowerCase();
+    const snippet = conversation.snippet.toLowerCase();
+    
+    return sender.includes(query) || subject.includes(query) || snippet.includes(query);
+  }
+
+  /**
    * Phase 4.4: Handle search button click
    */
   handleSearchButtonClick(button: HTMLButtonElement): void {
@@ -369,13 +413,18 @@ export class EventCoordinator {
       searchInput.focus();
     });
 
-    // Handle blur to restore button when clicking outside
-    searchInput.addEventListener('blur', () => {
-      // Use AnimationController for search restore delay
-      this.animator.scheduleSearchRestore(() => {
-        this.restoreSearchButton(searchInput);
-      });
+    // Handle input for real-time filtering
+    searchInput.addEventListener('input', () => {
+      this.state.setSearchQuery(searchInput.value);
+      this.filterConversations();
     });
+  }
+
+  /**
+   * Close search and restore button
+   */
+  handleSearchClose(searchInput: HTMLInputElement): void {
+    this.restoreSearchButton(searchInput);
   }
 
   /**
@@ -408,6 +457,7 @@ export class EventCoordinator {
     
     // Reset state and trigger re-render to attach event handlers
     this.state.setIsSearchActive(false);
+    this.state.setSearchQuery('');
     this.triggerRender();
   }
 
@@ -416,6 +466,17 @@ export class EventCoordinator {
    */
   handleClickOutside(event: MouseEvent, overlayRoot: HTMLElement): void {
     const target = event.target as HTMLElement;
+    
+    // Check if clicking inside search container
+    const searchContainer = target.closest('.mail-bites-search-container');
+    if (!searchContainer && this.state.getIsSearchActive()) {
+      // If search is active and clicking outside search container, restore search button
+      const searchInput = overlayRoot.querySelector('.mail-bites-search-input') as HTMLInputElement;
+      if (searchInput) {
+        this.restoreSearchButton(searchInput);
+      }
+      return;
+    }
     
     // Don't collapse if clicking a composer action button
     const composerAction = target.closest('.mail-bites-action-button');
@@ -580,6 +641,74 @@ export class EventCoordinator {
         this.saveDraft(composeIndex);
       }
     });
+  }
+
+  /**
+   * Handle filter button clicks to toggle collapse/expand
+   */
+  handleFilterButtonClick(type: 'unread' | 'read', button: HTMLButtonElement): void {
+    // Only unread button toggles
+    if (type !== 'unread') {
+      return;
+    }
+
+    const container = this.state.getContainer();
+    if (!container) {
+      return;
+    }
+
+    const toolbar = container.querySelector('.mail-bites-toolbar');
+    if (!toolbar) {
+      return;
+    }
+
+    const divider = toolbar.querySelector('.mail-bites-toolbar-divider') as HTMLElement;
+    const readButton = toolbar.querySelector('.mail-bites-toolbar-action-read') as HTMLElement;
+    const draftButton = toolbar.querySelector('.mail-bites-toolbar-action-draft') as HTMLElement;
+
+    if (!divider || !readButton || !draftButton) {
+      return;
+    }
+
+    const isCollapsed = this.state.getIsFilterCollapsed();
+
+    if (isCollapsed) {
+      // Expand: Add expanded class and animate
+      divider.classList.add('is-filter-expanding');
+      readButton.classList.add('is-filter-expanding');
+      draftButton.classList.add('is-filter-expanding');
+      
+      // After animation, remove animation class and add expanded state class
+      setTimeout(() => {
+        divider.classList.remove('is-filter-expanding');
+        readButton.classList.remove('is-filter-expanding');
+        draftButton.classList.remove('is-filter-expanding');
+        
+        divider.classList.add('is-filter-expanded');
+        readButton.classList.add('is-filter-expanded');
+        draftButton.classList.add('is-filter-expanded');
+      }, 300);
+      
+      this.state.setIsFilterCollapsed(false);
+    } else {
+      // Collapse: Remove expanded class and animate
+      divider.classList.remove('is-filter-expanded');
+      readButton.classList.remove('is-filter-expanded');
+      draftButton.classList.remove('is-filter-expanded');
+      
+      divider.classList.add('is-filter-collapsing');
+      readButton.classList.add('is-filter-collapsing');
+      draftButton.classList.add('is-filter-collapsing');
+      
+      // After animation, remove animation class
+      setTimeout(() => {
+        divider.classList.remove('is-filter-collapsing');
+        readButton.classList.remove('is-filter-collapsing');
+        draftButton.classList.remove('is-filter-collapsing');
+      }, 300);
+      
+      this.state.setIsFilterCollapsed(true);
+    }
   }
 }
 
