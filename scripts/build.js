@@ -35,6 +35,10 @@ const STATIC_ASSETS = [
     target: path.join(EXTENSION_DIR, 'archive-button.svg')
   },
   {
+    source: path.join(PROJECT_ROOT, 'assets', 'icons', 'attachments-button.svg'),
+    target: path.join(EXTENSION_DIR, 'attachments-button.svg')
+  },
+  {
     source: path.join(PROJECT_ROOT, 'assets', 'icons', 'delete-button.svg'),
     target: path.join(EXTENSION_DIR, 'delete-button.svg')
   },

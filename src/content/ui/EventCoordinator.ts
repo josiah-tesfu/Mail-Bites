@@ -190,9 +190,14 @@ export class EventCoordinator {
   }
 
   /**
-   * Phase 4.3: Handle composer action clicks (send/delete)
+   * Phase 4.3: Handle composer action clicks (send/delete/attachments)
    */
   handleComposerActionClick(type: ComposerActionType, conversation: ConversationData | null, composeIndex?: number): void {
+    if (type === 'attachments') {
+      // Attachments action - no-op for now
+      return;
+    }
+    
     if (type === 'delete') {
       if (conversation) {
         // Closing reply/forward composer - revert to read mode

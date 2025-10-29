@@ -28,6 +28,7 @@
     {
       "resources": [
         "archive-button.svg",
+        "attachments-button.svg",
         "delete-button.svg",
         "reply-button.svg",
         "forward-button.svg",

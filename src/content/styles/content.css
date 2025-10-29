@@ -318,15 +318,15 @@
   transform: translateY(-3px) scale(1.01);
 }
 
-/* collapsing state - smooth quick transition to scale 1.0 */
+/* collapsing state - smooth quick transition to scale 1.0 and translate 0 */
 /* Use !important to override :hover pseudo-class */
 .mail-bites-item.is-collapsing {
-  transform: translateY(-3px) scale(1.0) !important;
+  transform: translateY(0) scale(1.0) !important;
   transition: background-color 0.22s cubic-bezier(0.33, 1, 0.68, 1),
     border-radius 0.22s cubic-bezier(0.33, 1, 0.68, 1),
     box-shadow 0.22s cubic-bezier(0.33, 1, 0.68, 1),
     opacity 0.2s ease,
-    transform 0.25s ease-out !important; /* Quick smooth scale transition */
+    transform 0.25s ease-out !important; /* Quick smooth scale and translate transition */
 }
 
 .mail-bites-item.is-composer-active {

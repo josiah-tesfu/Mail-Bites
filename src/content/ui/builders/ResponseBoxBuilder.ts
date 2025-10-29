@@ -191,9 +191,11 @@ export class ResponseBoxBuilder {
 
     const sendButton = this.buildComposerActionButton('send', conversation, onAction, composeIndex);
     const deleteButton = this.buildComposerActionButton('delete', conversation, onAction, composeIndex);
+    const attachmentsButton = this.buildComposerActionButton('attachments', conversation, onAction, composeIndex);
 
     container.appendChild(sendButton);
     container.appendChild(deleteButton);
+    container.appendChild(attachmentsButton);
 
     return container;
   }
