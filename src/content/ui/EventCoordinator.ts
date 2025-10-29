@@ -288,6 +288,45 @@ export class EventCoordinator {
       '.mail-bites-toolbar-action-new-email'
     );
     
+    // Check if there's an expanded compose box with empty content
+    const expandedIndex = this.state.getExpandedComposeIndex();
+    if (expandedIndex !== null && expandedIndex !== -1) {
+      const container = this.state.getContainer();
+      const expandedBox = container?.querySelector(
+        `.mail-bites-response-box[data-compose-index="${expandedIndex}"]`
+      );
+      
+      if (expandedBox) {
+        const recipients = expandedBox.querySelector<HTMLInputElement>('input[name="recipients"]');
+        const subject = expandedBox.querySelector<HTMLInputElement>('input[name="subject"]');
+        const message = expandedBox.querySelector<HTMLTextAreaElement>('.mail-bites-composer-textarea');
+        
+        const isEmpty = (!recipients?.value || recipients.value.trim() === '') &&
+                       (!subject?.value || subject.value.trim() === '') &&
+                       (!message?.value || message.value.trim() === '');
+        
+        if (isEmpty) {
+          // Animate the button and pulse the empty draft
+          if (newEmailButton && !this.state.getIsComposingAnimating()) {
+            this.state.setIsComposingAnimating(true);
+            newEmailButton.classList.add('mail-bites-anim-rotate-close');
+            
+            newEmailButton.addEventListener('animationend', () => {
+              newEmailButton.classList.remove('mail-bites-anim-rotate-close');
+              this.state.setIsComposingAnimating(false);
+            }, { once: true });
+          }
+          
+          // Pulse the empty draft box
+          expandedBox.classList.remove('mail-bites-anim-bezel-surface');
+          void expandedBox.offsetWidth;
+          expandedBox.classList.add('mail-bites-anim-bezel-surface');
+          
+          return;
+        }
+      }
+    }
+    
     // Always add a new compose box
     const currentCount = this.state.getComposeBoxCount();
     const newIndex = currentCount;
