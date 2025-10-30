@@ -26,11 +26,11 @@ export class ResponseBoxBuilder {
     mode: ComposerMode,
     onComposerAction: (type: ComposerActionType, conversation: ConversationData | null, composeIndex?: number) => void,
     composeIndex?: number,
-    isExpanded?: boolean,
+    _isExpanded?: boolean,
     draft?: { recipients: string; subject: string; message: string }
   ): HTMLElement {
     const box = document.createElement('div');
-    box.className = 'mail-bites-response-box mail-bites-anim-bezel-surface';
+    box.className = 'mail-bites-response-box';
     if (conversation) {
       box.dataset.conversationId = conversation.id;
     }
@@ -39,52 +39,34 @@ export class ResponseBoxBuilder {
     }
     box.dataset.responseMode = mode;
     
-    box.addEventListener('animationend', () => {
-      box.classList.remove('mail-bites-anim-bezel-surface');
-    }, { once: true });
-    
-    if (isExpanded === false) {
-      // Build collapsed draft view
-      box.classList.add('is-collapsed');
-      const header = this.buildCollapsedDraftHeader(draft);
-      box.appendChild(header);
-    } else {
-      // Build full composer
-      const recipientsSection = this.buildFieldSection('Recipients', 'recipients', draft?.recipients);
-      const subjectSection = this.buildFieldSection('Subject', 'subject', draft?.subject);
-      const messageSection = this.buildMessageSection(draft?.message);
-      const actions = this.buildComposerActions(conversation, onComposerAction, composeIndex);
-      
-      box.appendChild(recipientsSection);
-      box.appendChild(subjectSection);
-      box.appendChild(messageSection);
-      box.appendChild(actions);
+    const shouldAnimateSurface = true;
+    if (shouldAnimateSurface) {
+      box.classList.add('mail-bites-anim-bezel-surface');
+      box.addEventListener(
+        'animationend',
+        () => {
+          box.classList.remove('mail-bites-anim-bezel-surface');
+        },
+        { once: true }
+      );
     }
     
-    return box;
-  }
+    const body = document.createElement('div');
+    body.className = 'mail-bites-composer-body';
 
-  /**
-   * Build collapsed draft header
-   */
-  private buildCollapsedDraftHeader(draft?: { recipients: string; subject: string; message: string }): HTMLElement {
-    const header = document.createElement('div');
-    header.className = 'mail-bites-composer-collapsed-header';
+    const recipientsSection = this.buildFieldSection('Recipients', 'recipients', draft?.recipients);
+    const subjectSection = this.buildFieldSection('Subject', 'subject', draft?.subject);
+    const messageSection = this.buildMessageSection(draft?.message);
+    const actions = this.buildComposerActions(conversation, onComposerAction, composeIndex);
     
-    const recipients = draft?.recipients || '';
-    const subject = draft?.subject || '';
+    body.appendChild(recipientsSection);
+    body.appendChild(subjectSection);
+    body.appendChild(messageSection);
+    body.appendChild(actions);
+
+    box.appendChild(body);
     
-    const recipientsEl = document.createElement('div');
-    recipientsEl.className = 'mail-bites-composer-collapsed-recipients';
-    recipientsEl.textContent = recipients || '\u00A0'; // Non-breaking space if empty
-    header.appendChild(recipientsEl);
-    
-    const subjectEl = document.createElement('div');
-    subjectEl.className = 'mail-bites-composer-collapsed-subject';
-    subjectEl.textContent = subject || '\u00A0'; // Non-breaking space if empty
-    header.appendChild(subjectEl);
-    
-    return header;
+    return box;
   }
 
   /**
@@ -190,11 +172,13 @@ export class ResponseBoxBuilder {
     container.className = 'mail-bites-action-row mail-bites-action-row--composer';
 
     const sendButton = this.buildComposerActionButton('send', conversation, onAction, composeIndex);
-    const deleteButton = this.buildComposerActionButton('delete', conversation, onAction, composeIndex);
     const attachmentsButton = this.buildComposerActionButton('attachments', conversation, onAction, composeIndex);
 
     container.appendChild(sendButton);
-    container.appendChild(deleteButton);
+    if (conversation) {
+      const deleteButton = this.buildComposerActionButton('delete', conversation, onAction, composeIndex);
+      container.appendChild(deleteButton);
+    }
     container.appendChild(attachmentsButton);
 
     return container;

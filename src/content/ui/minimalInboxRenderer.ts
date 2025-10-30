@@ -127,6 +127,8 @@ export class MinimalInboxRenderer {
     this.state.setConversationModes(conversationModes); // Phase 1.5: Write to UIState
     
     this.state.setIsSearchActive(false); // Phase 1.5: Write to UIState only
+    this.state.setFilterPrimaryAction('unread');
+    this.state.setIsFilterCollapsed(true);
     if (this.state.getContainer()) {
       this.state.getContainer()!.classList.remove('has-highlight');
       delete this.state.getContainer()!.dataset.highlightId;
@@ -202,8 +204,12 @@ export class MinimalInboxRenderer {
       
       for (let i = 0; i < composeBoxCount; i++) {
         const isExpanded = expandedComposeIndex === i;
+        if (!isExpanded) {
+          continue;
+        }
+
         const draft = composeDrafts.get(i);
-        const composeBox = this.buildComposeBox(i, isExpanded, draft);
+        const composeBox = this.buildComposeBox(i, draft);
         container.appendChild(composeBox);
       }
     }
@@ -225,7 +231,10 @@ export class MinimalInboxRenderer {
       if (pendingHoverId && conversation.id === pendingHoverId) {
         item.classList.add('is-hovered');
       }
-      if (this.state.getCollapseAnimationId() === conversation.id) { // Phase 1.5: Read from UIState
+      if (
+        this.state.getCollapseAnimationId() === conversation.id &&
+        this.state.getCollapsingId() !== conversation.id
+      ) { // Phase 1.5: Read from UIState
         item.classList.remove('mail-bites-anim-bezel');
         void item.offsetWidth;
         item.classList.add('mail-bites-anim-bezel');
@@ -315,13 +324,16 @@ export class MinimalInboxRenderer {
   }
 
   // Build standalone compose box
-  private buildComposeBox(composeIndex: number, isExpanded?: boolean, draft?: { recipients: string; subject: string; message: string }): HTMLElement {
+  private buildComposeBox(
+    composeIndex: number,
+    draft?: { recipients: string; subject: string; message: string }
+  ): HTMLElement {
     return this.responseBoxBuilder.build(
       null,
       'compose',
       (type: ComposerActionType, conv: ConversationData | null, idx?: number) => this.handleComposerAction(type, conv, idx),
       composeIndex,
-      isExpanded,
+      undefined,
       draft
     );
   }
@@ -337,6 +349,8 @@ export class MinimalInboxRenderer {
   // Phase 3.6: Delegate to ToolbarBuilder.build()
   private buildToolbar(): HTMLElement {
     return this.toolbarBuilder.build(
+      this.state.getFilterPrimaryAction(),
+      this.state.getIsFilterCollapsed(),
       (type, button) => this.handleToolbarButtonClick(type, button)
     );
   }
@@ -361,7 +375,7 @@ export class MinimalInboxRenderer {
       this.eventCoordinator.handleSearchButtonClick(button);
     } else if (type === 'new-email') {
       this.eventCoordinator.handleNewEmailClick();
-    } else if (type === 'unread' || type === 'read') {
+    } else if (type === 'unread' || type === 'read' || type === 'draft') {
       this.eventCoordinator.handleFilterButtonClick(type, button);
     }
   }

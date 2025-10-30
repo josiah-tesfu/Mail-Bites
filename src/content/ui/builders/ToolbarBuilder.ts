@@ -15,6 +15,8 @@ export class ToolbarBuilder {
    * Phase 3.6: Build complete toolbar
    */
   build(
+    primaryFilter: 'unread' | 'read' | 'draft',
+    isFilterCollapsed: boolean,
     onButtonClick: (type: ToolbarActionType, button: HTMLButtonElement) => void
   ): HTMLElement {
     const toolbar = document.createElement('div');
@@ -22,17 +24,33 @@ export class ToolbarBuilder {
 
     const newEmailButton = this.buildToolbarButton('new-email', onButtonClick);
     const searchButton = this.buildToolbarButton('search', onButtonClick);
-    const unreadButton = this.buildToolbarButton('unread', onButtonClick);
-    const divider = this.buildDivider();
-    const readButton = this.buildToolbarButton('read', onButtonClick);
-    const draftButton = this.buildToolbarButton('draft', onButtonClick);
 
     toolbar.appendChild(newEmailButton);
     toolbar.appendChild(searchButton);
-    toolbar.appendChild(unreadButton);
-    toolbar.appendChild(divider);
-    toolbar.appendChild(readButton);
-    toolbar.appendChild(draftButton);
+
+    const filterWrapper = document.createElement('div');
+    filterWrapper.className = 'mail-bites-toolbar-filter';
+    filterWrapper.classList.add(
+      isFilterCollapsed ? 'is-collapsed' : 'is-expanded'
+    );
+
+    const primaryButton = this.buildToolbarButton(primaryFilter, onButtonClick);
+    primaryButton.classList.add('mail-bites-toolbar-filter-primary');
+    filterWrapper.appendChild(primaryButton);
+
+    if (!isFilterCollapsed) {
+      const divider = this.buildDivider();
+      divider.classList.add('mail-bites-toolbar-filter-divider');
+      filterWrapper.appendChild(divider);
+
+      for (const secondary of this.getSecondaryFilters(primaryFilter)) {
+        const button = this.buildToolbarButton(secondary, onButtonClick);
+        button.classList.add('mail-bites-toolbar-filter-secondary');
+        filterWrapper.appendChild(button);
+      }
+    }
+
+    toolbar.appendChild(filterWrapper);
 
     return toolbar;
   }
@@ -74,5 +92,10 @@ export class ToolbarBuilder {
     });
 
     return button;
+  }
+
+  private getSecondaryFilters(primary: 'unread' | 'read' | 'draft'): Array<'unread' | 'read' | 'draft'> {
+    const filters: Array<'unread' | 'read' | 'draft'> = ['unread', 'read', 'draft'];
+    return filters.filter((filter) => filter !== primary);
   }
 }

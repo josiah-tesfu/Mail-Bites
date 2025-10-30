@@ -1,6 +1,6 @@
 import type { ActionType, PreviewActionType, ComposerActionType } from './types/actionTypes.js';
 import type { ConversationData } from './conversationParser.js';
-import { UIState } from './UIState.js';
+import { UIState, ComposeDraftData } from './UIState.js';
 import { AnimationController } from './AnimationController.js';
 import { ToolbarBuilder } from './builders/ToolbarBuilder.js';
 import { logger } from '../logger.js';
@@ -92,8 +92,15 @@ export class EventCoordinator {
         this.state.setExpandedId(null);
         this.state.setHighlightedId(null);
         this.state.setPendingHoverId(stillHovered ? conversationId : null);
-        this.state.setCollapseAnimationId(conversationId);
+        this.state.setCollapseAnimationId(stillHovered ? null : conversationId);
+        if (stillHovered) {
+          article.classList.remove('is-collapsing');
+          this.state.setCollapsingId(null);
+        }
         this.triggerRender();
+        if (!stillHovered) {
+          this.scheduleCollapseCleanup(conversationId);
+        }
       };
 
       if (details) {
@@ -209,26 +216,9 @@ export class EventCoordinator {
         this.state.setHighlightedId(conversation.id);
         this.state.setPendingHoverId(conversation.id);
       } else {
-        // Closing standalone compose box - save draft and remove box
         if (composeIndex !== undefined) {
-          // Save draft before closing
           this.saveDraft(composeIndex);
-          
-          // Decrement count to remove box
-          const currentCount = this.state.getComposeBoxCount();
-          const newCount = Math.max(0, currentCount - 1);
-          this.state.setComposeBoxCount(newCount);
-          
-          // If closed box was expanded, clear expanded index
-          if (this.state.getExpandedComposeIndex() === composeIndex) {
-            this.state.setExpandedComposeIndex(null);
-          }
-          
-          // If no boxes left, close composer mode
-          if (newCount === 0) {
-            this.state.setIsComposing(false);
-            this.state.setExpandedComposeIndex(-1);
-          }
+          this.removeComposeBox(composeIndex);
         }
       }
       this.triggerRender();
@@ -240,41 +230,7 @@ export class EventCoordinator {
         sentEmails.add(composeIndex);
         this.state.setSentEmails(sentEmails);
         
-        // Remove draft
-        const composeDrafts = this.state.getComposeDrafts();
-        composeDrafts.delete(composeIndex);
-        this.state.setComposeDrafts(composeDrafts);
-        
-        // Decrement count
-        const currentCount = this.state.getComposeBoxCount();
-        const newCount = Math.max(0, currentCount - 1);
-        this.state.setComposeBoxCount(newCount);
-        
-        // If sent box was expanded, clear expanded index
-        if (this.state.getExpandedComposeIndex() === composeIndex) {
-          this.state.setExpandedComposeIndex(null);
-        }
-        
-        // If no boxes left, close composer mode
-        if (newCount === 0) {
-          this.state.setIsComposing(false);
-          this.state.setExpandedComposeIndex(-1);
-          
-          // Animate button back
-          const btn = this.state.getContainer()?.querySelector<HTMLButtonElement>(
-            '.mail-bites-toolbar-action-new-email'
-          );
-          if (btn && btn.classList.contains('is-rotated')) {
-            this.state.setIsComposingAnimating(true);
-            btn.classList.add('mail-bites-anim-rotate-open');
-            
-            btn.addEventListener('animationend', () => {
-              btn.classList.remove('mail-bites-anim-rotate-open');
-              btn.classList.remove('is-rotated');
-              this.state.setIsComposingAnimating(false);
-            }, { once: true });
-          }
-        }
+        this.removeComposeBox(composeIndex, { archive: false });
       }
       this.triggerRender();
     }
@@ -487,7 +443,9 @@ export class EventCoordinator {
     this.animator.cancelAnimation('search-restore');
 
     const newToolbar = this.toolbarBuilder.build(
-      (type, button) => {} // No-op: toolbar will be replaced on next render
+      this.state.getFilterPrimaryAction(),
+      this.state.getIsFilterCollapsed(),
+      (type, button) => {}
     );
     const searchButton = newToolbar.querySelector('.mail-bites-toolbar-action-search');
     
@@ -547,13 +505,42 @@ export class EventCoordinator {
     
     // Collapse all compose boxes if any are open
     if (this.state.getIsComposing() && this.state.getExpandedComposeIndex() !== -1) {
+      const previousExpandedIndex = this.state.getExpandedComposeIndex();
+      const container = this.state.getContainer();
+      const expandedComposeBox =
+        previousExpandedIndex !== null && previousExpandedIndex !== -1
+          ? container?.querySelector<HTMLElement>(
+              `.mail-bites-response-box[data-compose-index="${previousExpandedIndex}"]`
+            )
+          : null;
+      
       // Save all drafts before collapsing
       logger.info('Collapsing compose boxes via click-outside');
       this.saveDraftsBeforeCollapse();
+      const removedEmptyDrafts = this.pruneEmptyComposeDrafts();
       
       // Set to -1 to collapse all (no box matches index -1)
-      this.state.setExpandedComposeIndex(-1);
-      this.triggerRender();
+      const composeCount = this.state.getComposeBoxCount();
+      if (composeCount === 0) {
+        this.state.setIsComposing(false);
+        this.state.setExpandedComposeIndex(-1);
+        if (removedEmptyDrafts) {
+          this.resetNewEmailButtonRotation();
+        }
+        this.triggerRender();
+      } else {
+        if (
+          !removedEmptyDrafts &&
+          expandedComposeBox &&
+          previousExpandedIndex !== null &&
+          previousExpandedIndex !== -1
+        ) {
+          this.animateComposeCollapse(expandedComposeBox, previousExpandedIndex);
+        } else {
+          this.state.setExpandedComposeIndex(-1);
+          this.triggerRender();
+        }
+      }
       return;
     }
     
@@ -608,24 +595,21 @@ export class EventCoordinator {
     const composeIndex = parseInt(composeIndexStr, 10);
     const currentExpandedIndex = this.state.getExpandedComposeIndex();
     
-    // If clicking collapsed header, expand this box
-    const collapsedHeader = target.closest('.mail-bites-composer-collapsed-header');
-    if (collapsedHeader) {
+    const isCollapsedBox = composeBox.classList.contains('is-collapsed');
+    if (isCollapsedBox) {
       event.stopPropagation();
-      
+
       if (currentExpandedIndex === composeIndex) {
-        // Already expanded, do nothing
         return;
       }
-      
-      // Save draft for currently expanded box
-      if (currentExpandedIndex !== null) {
+
+      if (currentExpandedIndex !== null && currentExpandedIndex !== -1) {
         this.saveDraft(currentExpandedIndex);
       }
-      
-      // Expand this box
+
       this.state.setExpandedComposeIndex(composeIndex);
       this.triggerRender();
+      return;
     }
   }
 
@@ -687,72 +671,282 @@ export class EventCoordinator {
     });
   }
 
+  private animateComposeCollapse(
+    composeBox: HTMLElement,
+    composeIndex: number
+  ): void {
+    const originalTransition = composeBox.style.transition;
+    const originalTransform = composeBox.style.transform;
+    const originalPointerEvents = composeBox.style.pointerEvents;
+
+    composeBox.classList.add('is-collapsing');
+    composeBox.style.pointerEvents = 'none';
+    composeBox.style.transition = 'transform 0.25s ease-out';
+
+    requestAnimationFrame(() => {
+      composeBox.style.transform = 'translateY(-3px) scale(1.01)';
+      requestAnimationFrame(() => {
+        composeBox.style.transform = 'translateY(0) scale(1)';
+      });
+    });
+
+    let cleaned = false;
+    const finalizeCollapse = () => {
+      if (cleaned) {
+        return;
+      }
+      cleaned = true;
+      composeBox.style.transition = originalTransition;
+      composeBox.style.transform = originalTransform;
+      composeBox.style.pointerEvents = originalPointerEvents;
+      composeBox.removeEventListener('transitionend', onTransitionEnd);
+      composeBox.classList.remove('is-collapsing');
+      this.removeComposeBox(composeIndex);
+      this.triggerRender();
+    };
+
+    const fallbackId = window.setTimeout(
+      finalizeCollapse,
+      AnimationController.COLLAPSE_TRANSITION_DURATION
+    );
+
+    const onTransitionEnd = (event: TransitionEvent) => {
+      if (event.propertyName !== 'transform') {
+        return;
+      }
+      window.clearTimeout(fallbackId);
+      finalizeCollapse();
+    };
+
+    composeBox.addEventListener('transitionend', onTransitionEnd, {
+      once: false
+    });
+  }
+
+  private removeComposeBox(composeIndex: number, options?: { archive?: boolean }): void {
+    const totalBoxes = this.state.getComposeBoxCount();
+    if (composeIndex < 0 || composeIndex >= totalBoxes) {
+      return;
+    }
+
+    const composeDrafts = this.state.getComposeDrafts();
+    const sentEmails = this.state.getSentEmails();
+    const removedDraft = composeDrafts.get(composeIndex);
+    const newDrafts = new Map<number, ComposeDraftData>();
+    const newSentEmails = new Set<number>();
+
+    for (let i = 0, next = 0; i < totalBoxes; i++) {
+      if (i === composeIndex) {
+        continue;
+      }
+
+      const draft = composeDrafts.get(i);
+      if (draft) {
+        newDrafts.set(next, draft);
+      }
+
+      if (sentEmails.has(i)) {
+        newSentEmails.add(next);
+      }
+
+      next++;
+    }
+
+    this.state.setComposeDrafts(newDrafts);
+    this.state.setSentEmails(newSentEmails);
+
+    if (removedDraft && options?.archive !== false) {
+      this.state.addArchivedComposeDraft(removedDraft);
+    }
+
+    const newCount = Math.max(0, totalBoxes - 1);
+    this.state.setComposeBoxCount(newCount);
+
+    if (newCount === 0) {
+      this.state.setIsComposing(false);
+      this.state.setExpandedComposeIndex(-1);
+      this.resetNewEmailButtonRotation();
+      return;
+    }
+
+    const currentExpanded = this.state.getExpandedComposeIndex();
+    if (currentExpanded === null || currentExpanded === -1) {
+      return;
+    }
+
+    if (currentExpanded === composeIndex) {
+      const nextExpanded = Math.min(composeIndex, newCount - 1);
+      this.state.setExpandedComposeIndex(nextExpanded >= 0 ? nextExpanded : -1);
+    } else if (currentExpanded > composeIndex) {
+      this.state.setExpandedComposeIndex(currentExpanded - 1);
+    }
+  }
+
+  private pruneEmptyComposeDrafts(): boolean {
+    const composeBoxCount = this.state.getComposeBoxCount();
+    if (composeBoxCount === 0) {
+      return false;
+    }
+
+    const composeDrafts = this.state.getComposeDrafts();
+    const sentEmails = this.state.getSentEmails();
+    const newDrafts = new Map<number, ComposeDraftData>();
+    const newSentEmails = new Set<number>();
+    let removed = false;
+    let nextIndex = 0;
+
+    for (let index = 0; index < composeBoxCount; index++) {
+      const draft = composeDrafts.get(index);
+      if (this.isDraftEmpty(draft)) {
+        removed = true;
+        continue;
+      }
+
+      const normalizedDraft: ComposeDraftData = {
+        recipients: draft?.recipients ?? '',
+        subject: draft?.subject ?? '',
+        message: draft?.message ?? ''
+      };
+      newDrafts.set(nextIndex, normalizedDraft);
+      if (sentEmails.has(index)) {
+        newSentEmails.add(nextIndex);
+      }
+      nextIndex++;
+    }
+
+    if (!removed) {
+      return false;
+    }
+
+    this.state.setComposeDrafts(newDrafts);
+    this.state.setComposeBoxCount(nextIndex);
+    this.state.setSentEmails(newSentEmails);
+    if (nextIndex === 0) {
+      this.state.setIsComposing(false);
+      this.state.setExpandedComposeIndex(-1);
+    } else {
+      const currentExpanded = this.state.getExpandedComposeIndex();
+      if (currentExpanded !== null && currentExpanded !== -1 && currentExpanded >= nextIndex) {
+        this.state.setExpandedComposeIndex(nextIndex - 1);
+      }
+    }
+
+    return true;
+  }
+
+  private isDraftEmpty(draft: ComposeDraftData | undefined): boolean {
+    if (!draft) {
+      return true;
+    }
+    const { recipients, subject, message } = draft;
+    return (
+      (!recipients || recipients.trim() === '') &&
+      (!subject || subject.trim() === '') &&
+      (!message || message.trim() === '')
+    );
+  }
+
+  private resetNewEmailButtonRotation(): void {
+    const btn = this.state.getContainer()?.querySelector<HTMLButtonElement>(
+      '.mail-bites-toolbar-action-new-email'
+    );
+    if (!btn || !btn.classList.contains('is-rotated')) {
+      return;
+    }
+
+    if (this.state.getIsComposingAnimating()) {
+      return;
+    }
+
+    this.state.setIsComposingAnimating(true);
+    btn.classList.add('mail-bites-anim-rotate-open');
+
+    btn.addEventListener(
+      'animationend',
+      () => {
+        btn.classList.remove('mail-bites-anim-rotate-open');
+        btn.classList.remove('is-rotated');
+        this.state.setIsComposingAnimating(false);
+      },
+      { once: true }
+    );
+  }
+
   /**
    * Handle filter button clicks to toggle collapse/expand
    */
-  handleFilterButtonClick(type: 'unread' | 'read', button: HTMLButtonElement): void {
-    // Only unread button toggles
-    if (type !== 'unread') {
-      return;
-    }
-
-    const container = this.state.getContainer();
-    if (!container) {
-      return;
-    }
-
-    const toolbar = container.querySelector('.mail-bites-toolbar');
-    if (!toolbar) {
-      return;
-    }
-
-    const divider = toolbar.querySelector('.mail-bites-toolbar-divider') as HTMLElement;
-    const readButton = toolbar.querySelector('.mail-bites-toolbar-action-read') as HTMLElement;
-    const draftButton = toolbar.querySelector('.mail-bites-toolbar-action-draft') as HTMLElement;
-
-    if (!divider || !readButton || !draftButton) {
-      return;
-    }
-
+  handleFilterButtonClick(
+    type: 'unread' | 'read' | 'draft',
+    _button: HTMLButtonElement
+  ): void {
+    const currentPrimary = this.state.getFilterPrimaryAction();
     const isCollapsed = this.state.getIsFilterCollapsed();
 
     if (isCollapsed) {
-      // Expand: Add expanded class and animate
-      divider.classList.add('is-filter-expanding');
-      readButton.classList.add('is-filter-expanding');
-      draftButton.classList.add('is-filter-expanding');
-      
-      // After animation, remove animation class and add expanded state class
-      setTimeout(() => {
-        divider.classList.remove('is-filter-expanding');
-        readButton.classList.remove('is-filter-expanding');
-        draftButton.classList.remove('is-filter-expanding');
-        
-        divider.classList.add('is-filter-expanded');
-        readButton.classList.add('is-filter-expanded');
-        draftButton.classList.add('is-filter-expanded');
-      }, 300);
-      
-      this.state.setIsFilterCollapsed(false);
-    } else {
-      // Collapse: Remove expanded class and animate
-      divider.classList.remove('is-filter-expanded');
-      readButton.classList.remove('is-filter-expanded');
-      draftButton.classList.remove('is-filter-expanded');
-      
-      divider.classList.add('is-filter-collapsing');
-      readButton.classList.add('is-filter-collapsing');
-      draftButton.classList.add('is-filter-collapsing');
-      
-      // After animation, remove animation class
-      setTimeout(() => {
-        divider.classList.remove('is-filter-collapsing');
-        readButton.classList.remove('is-filter-collapsing');
-        draftButton.classList.remove('is-filter-collapsing');
-      }, 300);
-      
-      this.state.setIsFilterCollapsed(true);
+      if (type === currentPrimary) {
+        this.state.setIsFilterCollapsed(false);
+        this.triggerRender();
+      }
+      return;
     }
+
+    if (type === currentPrimary) {
+      this.state.setIsFilterCollapsed(true);
+      this.triggerRender();
+      return;
+    }
+
+    this.state.setFilterPrimaryAction(type);
+    this.state.setIsFilterCollapsed(true);
+    this.triggerRender();
+  }
+
+  /**
+   * Ensure collapsing styles clean up once the transition finishes.
+   */
+  private scheduleCollapseCleanup(conversationId: string): void {
+    requestAnimationFrame(() => {
+      const container = this.state.getContainer();
+      if (!container) {
+        return;
+      }
+
+      const collapsedArticle = container.querySelector<HTMLElement>(
+        `article.mail-bites-item[data-conversation-id="${conversationId}"]`
+      );
+      if (!collapsedArticle) {
+        return;
+      }
+
+      let cleaned = false;
+      const cleanup = () => {
+        if (cleaned) {
+          return;
+        }
+        cleaned = true;
+        collapsedArticle.classList.remove('is-collapsing');
+        collapsedArticle.removeEventListener('transitionend', onTransitionEnd);
+        if (this.state.getCollapsingId() === conversationId) {
+          this.state.setCollapsingId(null);
+        }
+      };
+
+      const fallbackId = window.setTimeout(
+        cleanup,
+        AnimationController.COLLAPSE_TRANSITION_DURATION
+      );
+
+      const onTransitionEnd = (event: TransitionEvent) => {
+        if (event.propertyName !== 'transform') {
+          return;
+        }
+        window.clearTimeout(fallbackId);
+        cleanup();
+      };
+
+      collapsedArticle.addEventListener('transitionend', onTransitionEnd, {
+        once: false
+      });
+    });
   }
 }
-

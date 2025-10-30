@@ -1,5 +1,13 @@
 import type { ConversationData } from './conversationParser';
 
+export interface ComposeDraftData {
+  recipients: string;
+  subject: string;
+  message: string;
+}
+
+type FilterButton = 'unread' | 'read' | 'draft';
+
 /**
  * UIState - Centralized state management for MinimalInboxRenderer
  */
@@ -20,9 +28,11 @@ export class UIState {
   private isComposingAnimating = false;
   private composeBoxCount = 0;
   private expandedComposeIndex: number | null = null;
-  private composeDrafts = new Map<number, { recipients: string; subject: string; message: string }>();
+  private composeDrafts = new Map<number, ComposeDraftData>();
+  private archivedComposeDrafts: ComposeDraftData[] = [];
   private sentEmails = new Set<number>();
   private isFilterCollapsed = true;
+  private filterPrimaryAction: FilterButton = 'unread';
 
   // Getters
   getContainer(): HTMLElement | null {
@@ -89,7 +99,7 @@ export class UIState {
     return this.expandedComposeIndex;
   }
 
-  getComposeDrafts(): Map<number, { recipients: string; subject: string; message: string }> {
+  getComposeDrafts(): Map<number, ComposeDraftData> {
     return this.composeDrafts;
   }
 
@@ -99,6 +109,14 @@ export class UIState {
 
   getIsFilterCollapsed(): boolean {
     return this.isFilterCollapsed;
+  }
+
+  getFilterPrimaryAction(): FilterButton {
+    return this.filterPrimaryAction;
+  }
+
+  getArchivedComposeDrafts(): ComposeDraftData[] {
+    return this.archivedComposeDrafts;
   }
 
   // Setters
@@ -166,7 +184,7 @@ export class UIState {
     this.expandedComposeIndex = value;
   }
 
-  setComposeDrafts(value: Map<number, { recipients: string; subject: string; message: string }>): void {
+  setComposeDrafts(value: Map<number, ComposeDraftData>): void {
     this.composeDrafts = value;
   }
 
@@ -176,5 +194,13 @@ export class UIState {
 
   setIsFilterCollapsed(value: boolean): void {
     this.isFilterCollapsed = value;
+  }
+
+  setFilterPrimaryAction(value: FilterButton): void {
+    this.filterPrimaryAction = value;
+  }
+
+  addArchivedComposeDraft(draft: ComposeDraftData): void {
+    this.archivedComposeDrafts = [...this.archivedComposeDrafts, draft];
   }
 }
