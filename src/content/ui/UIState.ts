@@ -20,6 +20,8 @@ export class UIState {
   private pendingHoverId: string | null = null;
   private collapseAnimationId: string | null = null;
   private collapsingId: string | null = null;
+  private readIds = new Set<string>();
+  private hoveredIds = new Set<string>();
   private conversationModes = new Map<string, ConversationData['mode']>();
   private isSearchActive = false;
   private searchQuery = '';
@@ -65,6 +67,14 @@ export class UIState {
 
   getCollapsingId(): string | null {
     return this.collapsingId;
+  }
+
+  getReadIds(): Set<string> {
+    return this.readIds;
+  }
+
+  getHoveredIds(): Set<string> {
+    return this.hoveredIds;
   }
 
   getConversationModes(): Map<string, ConversationData['mode']> {
@@ -150,6 +160,14 @@ export class UIState {
 
   setCollapsingId(value: string | null): void {
     this.collapsingId = value;
+  }
+
+  setReadIds(value: Set<string>): void {
+    this.readIds = value;
+  }
+
+  setHoveredIds(value: Set<string>): void {
+    this.hoveredIds = value;
   }
 
   setConversationModes(value: Map<string, ConversationData['mode']>): void {

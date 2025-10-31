@@ -58,9 +58,44 @@ export class MinimalInboxRenderer {
       return;
     }
 
+    const dismissedIds = this.state.getDismissedIds();
+    const readIds = this.state.getReadIds();
+    const hoveredIds = this.state.getHoveredIds();
+    const expandedId = this.state.getExpandedId();
+    const pendingHoverId = this.state.getPendingHoverId();
+    const collapsingId = this.state.getCollapsingId();
+    const collapseAnimationId = this.state.getCollapseAnimationId();
+
     const conversations = this.collectConversations(context.mainElement)
       .filter((conversation) => conversation.isUnread)
-      .filter((conversation) => !this.state.getDismissedIds().has(conversation.id)); // Phase 1.5: Read from UIState
+      .filter((conversation) => !dismissedIds.has(conversation.id)) // Phase 1.5: Read from UIState
+      .filter((conversation) => {
+        if (!readIds.has(conversation.id)) {
+          return true;
+        }
+
+        if (expandedId === conversation.id) {
+          return true;
+        }
+
+        if (hoveredIds.has(conversation.id)) {
+          return true;
+        }
+
+        if (pendingHoverId === conversation.id) {
+          return true;
+        }
+
+        if (collapsingId === conversation.id) {
+          return true;
+        }
+
+        if (collapseAnimationId === conversation.id) {
+          return true;
+        }
+
+        return false;
+      });
 
     // NOTE: Read conversations are intentionally filtered out for now. This
     // prepares the ground for a future "show read" toggle that will append
@@ -120,6 +155,14 @@ export class MinimalInboxRenderer {
     dismissedIds.clear();
     this.state.setDismissedIds(dismissedIds); // Phase 1.5: Write to UIState
     
+    const readIds = this.state.getReadIds();
+    readIds.clear();
+    this.state.setReadIds(readIds);
+
+    const hoveredIds = this.state.getHoveredIds();
+    hoveredIds.clear();
+    this.state.setHoveredIds(hoveredIds);
+
     this.state.setPendingHoverId(null); // Phase 1.5: Write to UIState only
     
     const conversationModes = this.state.getConversationModes(); // Phase 1.5: Read from UIState

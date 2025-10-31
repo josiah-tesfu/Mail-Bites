@@ -297,6 +297,12 @@
   color: rgba(17, 17, 17, 0.6);
 }
 
+.mail-bites-item.is-fading-out {
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity 100ms ease-out, transform 100ms ease-out;
+}
+
 /* dim other rows when a card is open */
 .mail-bites-inbox.has-highlight .mail-bites-item {
   opacity: 0.35;

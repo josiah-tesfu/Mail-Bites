@@ -88,16 +88,39 @@ export class EventCoordinator {
           return;
         }
         handled = true;
+        const hoveredIds = this.state.getHoveredIds();
         const stillHovered = article.matches(':hover');
+        if (!stillHovered && hoveredIds.delete(conversationId)) {
+          this.state.setHoveredIds(hoveredIds);
+        }
         this.state.setExpandedId(null);
         this.state.setHighlightedId(null);
         this.state.setPendingHoverId(stillHovered ? conversationId : null);
-        this.state.setCollapseAnimationId(stillHovered ? null : conversationId);
+        this.state.setCollapseAnimationId(conversationId);
         if (stillHovered) {
           article.classList.remove('is-collapsing');
           this.state.setCollapsingId(null);
         }
-        this.triggerRender();
+        const shouldDelayRender =
+          !stillHovered &&
+          this.state.getReadIds().has(conversationId) &&
+          !this.state.getHoveredIds().has(conversationId);
+
+        if (!shouldDelayRender) {
+          this.triggerRender();
+        } else {
+          const containerEl = this.state.getContainer();
+          if (containerEl) {
+            const shouldKeepHighlight =
+              this.state.getIsComposing() &&
+              this.state.getExpandedComposeIndex() !== -1;
+            if (!shouldKeepHighlight) {
+              containerEl.classList.remove('has-highlight');
+              delete containerEl.dataset.highlightId;
+            }
+          }
+        }
+
         if (!stillHovered) {
           this.scheduleCollapseCleanup(conversationId);
         }
@@ -119,6 +142,7 @@ export class EventCoordinator {
     }
 
     this.state.setExpandedId(conversationId);
+    this.markConversationAsRead(conversationId);
     this.state.setHighlightedId(this.state.getExpandedId());
     this.state.setPendingHoverId(hovered ? conversationId : null);
     this.triggerRender();
@@ -137,13 +161,26 @@ export class EventCoordinator {
     }
 
     if (isEntering) {
+      const hoveredIds = this.state.getHoveredIds();
+      if (!hoveredIds.has(conversationId)) {
+        hoveredIds.add(conversationId);
+        this.state.setHoveredIds(hoveredIds);
+      }
       article.classList.add('is-hovered');
     } else {
       const conversation = this.state.getConversations().find(c => c.id === conversationId);
       if (this.state.getCollapsingId() === conversationId || conversation?.mode !== 'read') {
         return;
       }
+      const hoveredIds = this.state.getHoveredIds();
+      if (hoveredIds.delete(conversationId)) {
+        this.state.setHoveredIds(hoveredIds);
+      }
       article.classList.remove('is-hovered');
+      const isExpanded = this.state.getExpandedId() === conversationId;
+      if (this.state.getReadIds().has(conversationId) && !isExpanded) {
+        this.removeConversationFromState(conversationId);
+      }
     }
   }
 
@@ -168,6 +205,16 @@ export class EventCoordinator {
     const conversationModes = this.state.getConversationModes();
     conversationModes.delete(conversationId);
     this.state.setConversationModes(conversationModes);
+
+    const readIds = this.state.getReadIds();
+    if (readIds.delete(conversationId)) {
+      this.state.setReadIds(readIds);
+    }
+
+    const hoveredIds = this.state.getHoveredIds();
+    if (hoveredIds.delete(conversationId)) {
+      this.state.setHoveredIds(hoveredIds);
+    }
     
     this.state.setConversations(
       this.state.getConversations().filter(
@@ -190,6 +237,7 @@ export class EventCoordinator {
     conversationModes.set(conversation.id, type);
     this.state.setConversationModes(conversationModes);
     conversation.mode = type;
+    this.markConversationAsRead(conversation.id);
     this.state.setExpandedId(conversation.id);
     this.state.setHighlightedId(conversation.id);
     this.state.setPendingHoverId(conversation.id);
@@ -901,11 +949,90 @@ export class EventCoordinator {
     this.triggerRender();
   }
 
+  private markConversationAsRead(conversationId: string): void {
+    const readIds = this.state.getReadIds();
+    if (!readIds.has(conversationId)) {
+      readIds.add(conversationId);
+      this.state.setReadIds(readIds);
+    }
+
+    const conversation = this.state.getConversations().find(
+      (entry) => entry.id === conversationId
+    );
+    if (conversation) {
+      conversation.isUnread = false;
+    }
+  }
+
+  private removeConversationFromState(conversationId: string): void {
+    const conversations = this.state.getConversations();
+    if (!conversations.some((conversation) => conversation.id === conversationId)) {
+      return;
+    }
+
+    const container = this.state.getContainer();
+    const article = container?.querySelector<HTMLElement>(
+      `article.mail-bites-item[data-conversation-id="${conversationId}"]`
+    );
+
+    const finalizeRemoval = () => {
+      const updated = conversations.filter(
+        (conversation) => conversation.id !== conversationId
+      );
+      this.state.setConversations(updated);
+
+      const conversationModes = this.state.getConversationModes();
+      if (conversationModes.delete(conversationId)) {
+        this.state.setConversationModes(conversationModes);
+      }
+
+      this.triggerRender();
+    };
+
+    if (article && !article.classList.contains('is-fading-out')) {
+      article.classList.add('is-fading-out');
+      article.style.pointerEvents = 'none';
+
+      let cleaned = false;
+      const cleanup = () => {
+        if (cleaned) {
+          return;
+        }
+        cleaned = true;
+        article.removeEventListener('transitionend', onTransitionEnd);
+        finalizeRemoval();
+      };
+
+      const fallbackId = window.setTimeout(
+        cleanup,
+        AnimationController.ITEM_FADE_OUT_DURATION
+      );
+
+      const onTransitionEnd = (event: TransitionEvent) => {
+        if (event.propertyName !== 'opacity') {
+          return;
+        }
+        window.clearTimeout(fallbackId);
+        cleanup();
+      };
+
+      article.addEventListener('transitionend', onTransitionEnd);
+      return;
+    }
+
+    finalizeRemoval();
+  }
+
   /**
    * Ensure collapsing styles clean up once the transition finishes.
    */
   private scheduleCollapseCleanup(conversationId: string): void {
-    requestAnimationFrame(() => {
+    const scheduleFrame =
+      typeof window.requestAnimationFrame === 'function'
+        ? window.requestAnimationFrame.bind(window)
+        : (callback: FrameRequestCallback) => window.setTimeout(callback, 0);
+
+    scheduleFrame(() => {
       const container = this.state.getContainer();
       if (!container) {
         return;
@@ -928,6 +1055,13 @@ export class EventCoordinator {
         collapsedArticle.removeEventListener('transitionend', onTransitionEnd);
         if (this.state.getCollapsingId() === conversationId) {
           this.state.setCollapsingId(null);
+        }
+        if (
+          this.state.getReadIds().has(conversationId) &&
+          !this.state.getHoveredIds().has(conversationId) &&
+          this.state.getExpandedId() !== conversationId
+        ) {
+          this.removeConversationFromState(conversationId);
         }
       };
 

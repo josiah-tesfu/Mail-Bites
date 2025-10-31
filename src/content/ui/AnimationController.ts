@@ -17,6 +17,9 @@ export class AnimationController {
   // Search input restoration timing
   static readonly SEARCH_RESTORE_DELAY = 10;
 
+  // Fade-out duration for conversation removal
+  static readonly ITEM_FADE_OUT_DURATION = 100;
+
   private activeAnimations = new Map<string, number>();
   private completionCallbacks = new Map<string, () => void>();
 

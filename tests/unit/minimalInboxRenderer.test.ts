@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { MinimalInboxRenderer } from '@/content/ui/minimalInboxRenderer';
 import type { ViewContext } from '@/content/viewTracker';
 
@@ -216,5 +216,37 @@ describe('MinimalInboxRenderer', () => {
 
     const composer = overlayRoot.querySelector('.mail-bites-response-box');
     expect(composer).toBeNull();
+  });
+
+  it('removes conversation once collapsed and no longer hovered', () => {
+    vi.useFakeTimers();
+    try {
+      const row = buildConversationRow({
+        sender: 'Reader',
+        subject: 'Subject',
+        snippet: '- preview',
+        date: 'Jan 7',
+        unread: true,
+        threadId: 'thread-remove'
+      });
+
+      const renderer = new MinimalInboxRenderer();
+      const overlayRoot = document.createElement('div');
+      renderer.render(buildViewContext([row]), overlayRoot);
+
+      let item = overlayRoot.querySelector<HTMLElement>('article.mail-bites-item');
+      expect(item).not.toBeNull();
+
+      item?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      item = overlayRoot.querySelector<HTMLElement>('article.mail-bites-item');
+      item?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      vi.runAllTimers();
+
+      const remaining = overlayRoot.querySelectorAll('article.mail-bites-item');
+      expect(remaining).toHaveLength(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
