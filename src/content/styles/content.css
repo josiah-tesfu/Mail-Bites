@@ -36,14 +36,12 @@
   gap: 20px;
   margin-bottom: 24px;
   align-items: flex-end;
-  padding-left: 20px;
 }
 
 .mail-bites-toolbar-filter {
   display: flex;
   align-items: center;
   gap: 20px;
-  margin-left: 20px;
 }
 
 .mail-bites-toolbar-filter.is-collapsed .mail-bites-toolbar-filter-divider,
