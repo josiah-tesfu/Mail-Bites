@@ -247,12 +247,8 @@ export class MinimalInboxRenderer {
       
       for (let i = 0; i < composeBoxCount; i++) {
         const isExpanded = expandedComposeIndex === i;
-        if (!isExpanded) {
-          continue;
-        }
-
         const draft = composeDrafts.get(i);
-        const composeBox = this.buildComposeBox(i, draft);
+        const composeBox = this.buildComposeBox(i, draft, isExpanded);
         container.appendChild(composeBox);
       }
     }
@@ -369,14 +365,15 @@ export class MinimalInboxRenderer {
   // Build standalone compose box
   private buildComposeBox(
     composeIndex: number,
-    draft?: { recipients: string; subject: string; message: string }
+    draft: { recipients: string; subject: string; message: string } | undefined,
+    isExpanded: boolean
   ): HTMLElement {
     return this.responseBoxBuilder.build(
       null,
       'compose',
       (type: ComposerActionType, conv: ConversationData | null, idx?: number) => this.handleComposerAction(type, conv, idx),
       composeIndex,
-      undefined,
+      isExpanded,
       draft
     );
   }

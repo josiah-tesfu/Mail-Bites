@@ -249,4 +249,83 @@ describe('MinimalInboxRenderer', () => {
       vi.useRealTimers();
     }
   });
+
+  it('collapses non-empty drafts into compact cards and restores their content', () => {
+    vi.useFakeTimers();
+    try {
+      const row = buildConversationRow({
+        sender: 'Inbox',
+        subject: 'Subject',
+        snippet: '- preview',
+        date: 'Nov 2',
+        unread: true,
+        threadId: 'thread-draft'
+      });
+
+      const renderer = new MinimalInboxRenderer();
+      const overlayRoot = document.createElement('div');
+      renderer.render(buildViewContext([row]), overlayRoot);
+
+      const newEmailButton = overlayRoot.querySelector<HTMLButtonElement>(
+        '.mail-bites-toolbar-action-new-email'
+      );
+      expect(newEmailButton).not.toBeNull();
+      newEmailButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      const composeBox = overlayRoot.querySelector<HTMLElement>(
+        '.mail-bites-response-box[data-compose-index="0"]'
+      );
+      expect(composeBox).not.toBeNull();
+
+      const recipientsInput = composeBox?.querySelector<HTMLInputElement>(
+        'input[name="recipients"]'
+      );
+      const subjectInput = composeBox?.querySelector<HTMLInputElement>(
+        'input[name="subject"]'
+      );
+      const messageTextarea = composeBox?.querySelector<HTMLTextAreaElement>(
+        '.mail-bites-composer-textarea'
+      );
+
+      if (recipientsInput) {
+        recipientsInput.value = 'person@example.com';
+        recipientsInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      if (subjectInput) {
+        subjectInput.value = 'Draft Subject';
+        subjectInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      if (messageTextarea) {
+        messageTextarea.value = 'Draft message body';
+        messageTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+
+      overlayRoot.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+      overlayRoot.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      vi.runAllTimers();
+
+      const collapsedDraft = overlayRoot.querySelector<HTMLElement>(
+        '.mail-bites-response-box--collapsed[data-compose-index="0"]'
+      );
+      expect(collapsedDraft).not.toBeNull();
+
+      collapsedDraft?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      vi.runAllTimers();
+
+      const reopenedBox = overlayRoot.querySelector<HTMLElement>(
+        '.mail-bites-response-box[data-compose-index="0"]:not(.mail-bites-response-box--collapsed)'
+      );
+      expect(reopenedBox).not.toBeNull();
+
+      const reopenedRecipients = reopenedBox?.querySelector<HTMLInputElement>('input[name="recipients"]');
+      const reopenedSubject = reopenedBox?.querySelector<HTMLInputElement>('input[name="subject"]');
+      const reopenedMessage = reopenedBox?.querySelector<HTMLTextAreaElement>('.mail-bites-composer-textarea');
+
+      expect(reopenedRecipients?.value).toBe('person@example.com');
+      expect(reopenedSubject?.value).toBe('Draft Subject');
+      expect(reopenedMessage?.value).toBe('Draft message body');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

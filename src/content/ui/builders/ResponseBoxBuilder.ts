@@ -26,7 +26,7 @@ export class ResponseBoxBuilder {
     mode: ComposerMode,
     onComposerAction: (type: ComposerActionType, conversation: ConversationData | null, composeIndex?: number) => void,
     composeIndex?: number,
-    _isExpanded?: boolean,
+    isExpanded: boolean = true,
     draft?: { recipients: string; subject: string; message: string }
   ): HTMLElement {
     const box = document.createElement('div');
@@ -39,6 +39,12 @@ export class ResponseBoxBuilder {
     }
     box.dataset.responseMode = mode;
     
+    if (!isExpanded) {
+      box.classList.add('mail-bites-response-box--collapsed', 'mail-bites-item');
+      this.buildCollapsedDraftContent(box, draft);
+      return box;
+    }
+
     const shouldAnimateSurface = true;
     if (shouldAnimateSurface) {
       box.classList.add('mail-bites-anim-bezel-surface');
@@ -67,6 +73,44 @@ export class ResponseBoxBuilder {
     box.appendChild(body);
     
     return box;
+  }
+
+  private buildCollapsedDraftContent(
+    container: HTMLElement,
+    draft?: { recipients: string; subject: string; message: string }
+  ): void {
+    const header = document.createElement('div');
+    header.className = 'mail-bites-item-header';
+
+    const main = document.createElement('div');
+    main.className = 'mail-bites-header-main';
+
+    const sender = document.createElement('span');
+    sender.className = 'mail-bites-sender';
+    sender.textContent = draft?.recipients?.trim() || '(No sender)';
+
+    const subject = document.createElement('span');
+    subject.className = 'mail-bites-subject';
+    subject.textContent = draft?.subject?.trim() || '(No subject)';
+
+    main.appendChild(sender);
+    main.appendChild(subject);
+
+    const right = document.createElement('div');
+    right.className = 'mail-bites-header-right';
+
+    const date = document.createElement('span');
+    date.className = 'mail-bites-date';
+    date.textContent = new Date().toLocaleTimeString([], {
+      hour: 'numeric',
+      minute: '2-digit'
+    });
+    right.appendChild(date);
+
+    header.appendChild(main);
+    header.appendChild(right);
+
+    container.appendChild(header);
   }
 
   /**

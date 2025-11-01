@@ -517,6 +517,18 @@
   margin: 12px 0 24px;
 }
 
+.mail-bites-response-box--collapsed {
+  margin: 0;
+  padding: 18px 20px;
+  display: block;
+  border: 1px solid #c5c5c5;
+  border-left-color: transparent;
+  border-right-color: transparent;
+  border-radius: 0;
+  background: #ffffff;
+  min-height: auto;
+  transform: none;
+}
 
 .mail-bites-composer-body {
   display: flex;

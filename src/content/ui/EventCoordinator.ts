@@ -561,33 +561,45 @@ export class EventCoordinator {
               `.mail-bites-response-box[data-compose-index="${previousExpandedIndex}"]`
             )
           : null;
-      
+
       // Save all drafts before collapsing
       logger.info('Collapsing compose boxes via click-outside');
       this.saveDraftsBeforeCollapse();
-      const removedEmptyDrafts = this.pruneEmptyComposeDrafts();
-      
-      // Set to -1 to collapse all (no box matches index -1)
-      const composeCount = this.state.getComposeBoxCount();
-      if (composeCount === 0) {
-        this.state.setIsComposing(false);
-        this.state.setExpandedComposeIndex(-1);
-        if (removedEmptyDrafts) {
+
+      const composeDrafts = this.state.getComposeDrafts();
+      const currentDraft =
+        previousExpandedIndex !== null && previousExpandedIndex !== -1
+          ? composeDrafts.get(previousExpandedIndex)
+          : undefined;
+      const shouldRemoveCurrent = this.isDraftEmpty(currentDraft);
+
+      if (previousExpandedIndex === null || previousExpandedIndex === -1) {
+        if (shouldRemoveCurrent) {
+          this.state.setExpandedComposeIndex(-1);
+          this.state.setIsComposing(false);
           this.resetNewEmailButtonRotation();
-        }
-        this.triggerRender();
-      } else {
-        if (
-          !removedEmptyDrafts &&
-          expandedComposeBox &&
-          previousExpandedIndex !== null &&
-          previousExpandedIndex !== -1
-        ) {
-          this.animateComposeCollapse(expandedComposeBox, previousExpandedIndex);
         } else {
           this.state.setExpandedComposeIndex(-1);
-          this.triggerRender();
         }
+        this.triggerRender();
+        return;
+      }
+
+      if (shouldRemoveCurrent) {
+        this.removeComposeBox(previousExpandedIndex);
+        if (this.state.getComposeBoxCount() === 0) {
+          this.state.setIsComposing(false);
+          this.resetNewEmailButtonRotation();
+        }
+        this.state.setExpandedComposeIndex(-1);
+        this.triggerRender();
+      } else if (expandedComposeBox) {
+        this.animateComposeCollapse(expandedComposeBox, previousExpandedIndex, {
+          removeAfterCollapse: false
+        });
+      } else {
+        this.state.setExpandedComposeIndex(-1);
+        this.triggerRender();
       }
       return;
     }
@@ -643,7 +655,7 @@ export class EventCoordinator {
     const composeIndex = parseInt(composeIndexStr, 10);
     const currentExpandedIndex = this.state.getExpandedComposeIndex();
     
-    const isCollapsedBox = composeBox.classList.contains('is-collapsed');
+    const isCollapsedBox = composeBox.classList.contains('mail-bites-response-box--collapsed');
     if (isCollapsedBox) {
       event.stopPropagation();
 
@@ -721,8 +733,10 @@ export class EventCoordinator {
 
   private animateComposeCollapse(
     composeBox: HTMLElement,
-    composeIndex: number
+    composeIndex: number,
+    options?: { removeAfterCollapse?: boolean }
   ): void {
+    const shouldRemove = options?.removeAfterCollapse ?? true;
     const originalTransition = composeBox.style.transition;
     const originalTransform = composeBox.style.transform;
     const originalPointerEvents = composeBox.style.pointerEvents;
@@ -749,7 +763,11 @@ export class EventCoordinator {
       composeBox.style.pointerEvents = originalPointerEvents;
       composeBox.removeEventListener('transitionend', onTransitionEnd);
       composeBox.classList.remove('is-collapsing');
-      this.removeComposeBox(composeIndex);
+      if (shouldRemove) {
+        this.removeComposeBox(composeIndex);
+      } else {
+        this.state.setExpandedComposeIndex(-1);
+      }
       this.triggerRender();
     };
 
@@ -828,58 +846,6 @@ export class EventCoordinator {
     } else if (currentExpanded > composeIndex) {
       this.state.setExpandedComposeIndex(currentExpanded - 1);
     }
-  }
-
-  private pruneEmptyComposeDrafts(): boolean {
-    const composeBoxCount = this.state.getComposeBoxCount();
-    if (composeBoxCount === 0) {
-      return false;
-    }
-
-    const composeDrafts = this.state.getComposeDrafts();
-    const sentEmails = this.state.getSentEmails();
-    const newDrafts = new Map<number, ComposeDraftData>();
-    const newSentEmails = new Set<number>();
-    let removed = false;
-    let nextIndex = 0;
-
-    for (let index = 0; index < composeBoxCount; index++) {
-      const draft = composeDrafts.get(index);
-      if (this.isDraftEmpty(draft)) {
-        removed = true;
-        continue;
-      }
-
-      const normalizedDraft: ComposeDraftData = {
-        recipients: draft?.recipients ?? '',
-        subject: draft?.subject ?? '',
-        message: draft?.message ?? ''
-      };
-      newDrafts.set(nextIndex, normalizedDraft);
-      if (sentEmails.has(index)) {
-        newSentEmails.add(nextIndex);
-      }
-      nextIndex++;
-    }
-
-    if (!removed) {
-      return false;
-    }
-
-    this.state.setComposeDrafts(newDrafts);
-    this.state.setComposeBoxCount(nextIndex);
-    this.state.setSentEmails(newSentEmails);
-    if (nextIndex === 0) {
-      this.state.setIsComposing(false);
-      this.state.setExpandedComposeIndex(-1);
-    } else {
-      const currentExpanded = this.state.getExpandedComposeIndex();
-      if (currentExpanded !== null && currentExpanded !== -1 && currentExpanded >= nextIndex) {
-        this.state.setExpandedComposeIndex(nextIndex - 1);
-      }
-    }
-
-    return true;
   }
 
   private isDraftEmpty(draft: ComposeDraftData | undefined): boolean {
