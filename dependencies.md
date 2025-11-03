@@ -1,0 +1,76 @@
+# Dependency Tree
+
+- Omitted external `node_modules/` packages from this hierarchy.
+- `src/content/index.ts:1` — Boots the Mail Bites content script once Gmail’s DOM is ready (imports: `./app.ts`).
+  - `src/content/app.ts:1` — Coordinates overlay lifecycle, Gmail view tracking, and font setup (imports: `./logger.ts`, `./viewTracker.ts`, `./ui/minimalInboxRenderer.ts`, `./fontLoader.ts`).
+    - `src/content/logger.ts:1` — Provides a console wrapper that prefixes Mail Bites logs (imports: none).
+    - `src/content/viewTracker.ts:1` — Debounced observer that detects Gmail SPA navigation and DOM changes (imports: `./logger.ts`, `./navigation.ts`).
+      - `src/content/navigation.ts:1` — Monkey-patches History API methods to notify registered navigation listeners (imports: none).
+    - `src/content/ui/minimalInboxRenderer.ts:1` — Extracts Gmail inbox rows and renders the minimalist overlay UI with stateful interactions (imports: `../viewTracker.ts`, `../logger.ts`, `./conversationParser.ts`, `./types/types.ts`, `./types/actionTypes.ts`, `./AnimationController.ts`, `./UIState.ts`, `./builders/ConversationItemBuilder.ts`, `./builders/ToolbarBuilder.ts`, `./builders/ResponseBoxBuilder.ts`, `./EventCoordinator.ts`).
+      - `src/content/ui/conversationParser.ts:1` — Normalizes Gmail conversation rows into structured data objects for rendering (imports: `./types/types.ts`).
+        - `src/content/ui/types/types.ts:1` — Declares the DOM shape used when parsing Gmail conversation rows (imports: none).
+      - `src/content/ui/types/actionTypes.ts:1` — Enumerates string literal unions for toolbar, action, preview, and composer events (imports: none).
+      - `src/content/ui/AnimationController.ts:1` — Centralizes animation timing and timeout bookkeeping for UI effects (imports: none).
+      - `src/content/ui/UIState.ts:1` — Holds all mutable UI state for the overlay, including compose boxes and filters (imports: `./conversationParser.ts`).
+      - `src/content/ui/builders/ConversationItemBuilder.ts:1` — Creates DOM elements for conversation cards, their actions, and previews (imports: `../types/actionTypes.ts`, `../conversationParser.ts`, `../utils/constants.ts`).
+        - `src/content/ui/utils/constants.ts:1` — Maps UI action identifiers to icon filenames and accessible labels, resolving Chrome asset URLs (imports: `../types/actionTypes.ts`).
+      - `src/content/ui/builders/ToolbarBuilder.ts:1` — Produces the toolbar DOM and its filter buttons (imports: `../types/actionTypes.ts`, `../utils/constants.ts`).
+      - `src/content/ui/builders/ResponseBoxBuilder.ts:1` — Generates reply/forward/compose boxes with action buttons and draft persistence hooks (imports: `../types/actionTypes.ts`, `../conversationParser.ts`, `../utils/constants.ts`).
+      - `src/content/ui/EventCoordinator.ts:1` — Orchestrates all UI event routing, hover logic, search, and compose transitions (imports: `./types/actionTypes.ts`, `./conversationParser.ts`, `./UIState.ts`, `./AnimationController.ts`, `./builders/ToolbarBuilder.ts`, `../logger.ts`; reuses modules listed above).
+    - `src/content/fontLoader.ts:1` — Lazily injects the Manrope font stylesheet into Gmail to support the overlay typography (imports: none).
+- `src/content/ui/ConversationItemBuilder.ts:1` — Empty placeholder file reserved for future refactors (imports: none).
+- `src/content/ui/constants.ts:1` — Empty placeholder intended for shared UI constants (imports: none).
+- `src/content/content.css:1` — Placeholder stylesheet created for future direct content-script styles (imports: none).
+- `src/content/styles/content.css:1` — Defines visual styles for the overlay layout, toolbar, items, and animations (imports: none).
+- `src/content/styles/animations.css:1` — Houses shared keyframe animations for cards, buttons, and compose transitions (imports: none).
+- `scripts/build.js:1` — Esbuild-based bundler that compiles the content script and syncs styles plus assets into `extension/` (imports: `path`, `fs/promises`, `process`, `esbuild`).
+- `tests/setup/vitest.setup.ts:1` — Sets up a mocked Chrome API and Vitest helpers for unit tests (imports: `vitest`).
+- `tests/unit/conversationParser.test.ts:1` — Validates Gmail row parsing logic against various DOM scenarios (imports: `vitest`, `@/content/ui/conversationParser`).
+- `tests/unit/minimalInboxRenderer.test.ts:1` — Exercises the renderer’s filtering, expansion, and response flows in jsdom (imports: `vitest`, `@/content/ui/minimalInboxRenderer`, `@/content/viewTracker` types).
+- `tests/unit/fontLoader.test.ts:1` — Confirms the font loader injects a single stylesheet link (imports: `vitest`, `@/content/fontLoader`).
+- `tests/unit/README.md:1` — Documents goals and structure of the unit test suite (imports: none).
+- `tests/integration/README.md:1` — Describes the Playwright extension test strategy and setup (imports: none).
+- `vitest.config.ts:1` — Configures Vitest with jsdom, aliases, and shared setup file (imports: `vitest/config`, `path`).
+- `playwright.config.ts:1` — Launches Playwright with the packed extension for browser-based tests (imports: `@playwright/test`, `path`).
+- `tsconfig.json:1` — TypeScript compiler settings including path aliases for `@/` (imports: none).
+- `package.json:1` — Declares project metadata, dev dependencies, and npm scripts (imports: none).
+- `package-lock.json:1` — Pinpoints exact dependency versions for reproducible installs (imports: none).
+- `README.md:1` — Explains the Mail Bites project scope and local development workflow (imports: none).
+- `docs/architecture.md:1` — Captures high-level architecture decisions and planned evolutions (imports: none).
+- `docs/known-issues.md:1` — Lists current bugs and limitations to track (imports: none).
+- `docs/project_roadmap.md:1` — Outlines staged milestones for future work (imports: none).
+- `docs/refactor.md:1` — Records refactor plans and debt cleanup ideas (imports: none).
+- `docs/setup.md:1` — Provides detailed environment setup instructions (imports: none).
+- `docs/testing.md:1` — Summarizes testing strategy across unit and integration layers (imports: none).
+- `docs/updates.md:1` — Change log capturing ongoing updates and decisions (imports: none).
+- `assets/icons/archive-button.svg:1` — SVG icon for the archive action (imports: none).
+- `assets/icons/attachments-button.svg:1` — SVG icon representing attachments in the composer (imports: none).
+- `assets/icons/close-draft.svg:1` — SVG graphic for closing a draft composer (imports: none).
+- `assets/icons/delete-button.svg:1` — SVG icon used for delete action buttons (imports: none).
+- `assets/icons/draft-button.svg:1` — SVG icon for draft filter toggles (imports: none).
+- `assets/icons/forward-button.svg:1` — SVG icon for forwarding previews (imports: none).
+- `assets/icons/new-email-button.svg:1` — SVG icon for the compose-new toolbar button (imports: none).
+- `assets/icons/read-button.svg:1` — SVG icon denoting the read filter state (imports: none).
+- `assets/icons/reply-button.svg:1` — SVG icon for reply preview actions (imports: none).
+- `assets/icons/search-button.svg:1` — SVG icon for the toolbar search control (imports: none).
+- `assets/icons/send-button.svg:1` — SVG icon for the composer send action (imports: none).
+- `assets/icons/unread-button.svg:1` — SVG icon representing the unread filter (imports: none).
+- `assets/icons/.DS_Store:1` — macOS Finder metadata file (imports: none).
+- `assets/templates/composer-divider.html:1` — Reusable HTML divider snippet for compose UIs (imports: none).
+- `extension/content-script.js:1` — Bundled, minified content script distributed to Chrome (imports: inlined bundle).
+- `extension/content-script.js.map:1` — Source map linking the bundle back to TypeScript sources (imports: none).
+- `extension/content.css:1` — Packaged overlay stylesheet copied for the extension build (imports: none).
+- `extension/animations.css:1` — Packaged animation stylesheet used by the extension UI (imports: none).
+- `extension/archive-button.svg:1` — Packaged archive icon mirrored for Chrome (imports: none).
+- `extension/attachments-button.svg:1` — Packaged attachments icon mirrored for Chrome (imports: none).
+- `extension/close-draft.svg:1` — Packaged close-draft icon mirrored for Chrome (imports: none).
+- `extension/delete-button.svg:1` — Packaged delete icon mirrored for Chrome (imports: none).
+- `extension/draft-button.svg:1` — Packaged draft icon mirrored for Chrome (imports: none).
+- `extension/forward-button.svg:1` — Packaged forward icon mirrored for Chrome (imports: none).
+- `extension/manifest.json:1` — Chrome extension manifest declaring permissions and content scripts (imports: none).
+- `extension/new-email-button.svg:1` — Packaged new-email icon mirrored for Chrome (imports: none).
+- `extension/read-button.svg:1` — Packaged read icon mirrored for Chrome (imports: none).
+- `extension/reply-button.svg:1` — Packaged reply icon mirrored for Chrome (imports: none).
+- `extension/search-button.svg:1` — Packaged search icon mirrored for Chrome (imports: none).
+- `extension/send-button.svg:1` — Packaged send icon mirrored for Chrome (imports: none).
+- `extension/unread-button.svg:1` — Packaged unread icon mirrored for Chrome (imports: none).
