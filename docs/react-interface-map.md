@@ -62,13 +62,13 @@ This document provides a detailed tabular breakdown of all React components, the
 
 | **Category** | **Details** |
 |--------------|-------------|
-| **Props** | None |
-| **Zustand Stores** | • `useToolbarStore` (searchQuery, setSearchQuery, toggleSearch) |
-| **Custom Hooks** | • `useAnimations()` - For search button → input transformation |
-| **Local State** | • `isTransitioning: boolean` - Animation in progress<br>• `inputRef: RefObject<HTMLInputElement>` - For focus management |
-| **Child Components** | • Native `<input>` element<br>• Close button (× icon) |
-| **Event Handlers** | • `onChange` → debounced `setSearchQuery()` (300ms)<br>• `onBlur` → `toggleSearch()` if empty<br>• `onKeyDown` → Escape key closes search |
-| **Notes** | • Animated rotation + width expansion<br>• Auto-focuses on transition complete<br>• Clears query on close |
+| **Props** | `LegacyToolbarHandlers` slice (onSearchClose, onSearchQueryChange) |
+| **Zustand Stores** | • `useToolbarStore` (searchQuery, setSearchQuery, setSearchActive) |
+| **Custom Hooks** | • `useAnimations()` (triggered upstream) |
+| **Local State** | • `value: string` - Debounced input value<br>• `inputRef: RefObject<HTMLInputElement>` - Focus management |
+| **Child Components** | • Native `<input>` element |
+| **Event Handlers** | • `onChange` → debounced `onSearchQueryChange()` (300ms)<br>• `onBlur` → `onSearchClose()` if empty<br>• `onKeyDown` → Escape key closes search |
+| **Notes** | • Auto-focuses when mounted<br>• Closing clears query and restores search button animation |
 
 ---
 
@@ -81,10 +81,10 @@ This document provides a detailed tabular breakdown of all React components, the
 | **Props** | None |
 | **Zustand Stores** | • `useToolbarStore` (filterButtonOrder, rotateFilterButtons, isFilterCollapsed, toggleFilterCollapse) |
 | **Custom Hooks** | • `useAnimations()` - For rotation animation feedback |
-| **Local State** | • `isRotating: boolean` - Transient animation state during reorder |
+| **Local State** | • `rotatingType: 'unread' \\| 'read' \\| 'draft' \\| null` - Locks buttons during animation |
 | **Child Components** | • `<ToolbarButton type={buttonType} />` (3x, dynamically ordered)<br>• `<Divider />` (vertical separator) |
-| **Event Handlers** | • `handleFilterClick(type)` → `rotateFilterButtons(type)` |
-| **Notes** | • Reorders `filterButtonOrder` array in store<br>• Animates clicked button to first position<br>• Collapse state controls visibility |
+| **Event Handlers** | • `handleFilterClick(type)` → `rotateFilterButtons(type)` + `setFilterCollapsed()` |
+| **Notes** | • Reads `filterButtonOrder`/`isFilterCollapsed` from store<br>• Applies `mail-bites-filter-rotate` class via `useAnimations()`<br>• Collapse state controls visibility |
 
 ---
 
@@ -435,36 +435,63 @@ User clicks Reply button
 
 ## Migration Checklist
 
-### Phase 1: Foundation ✓
-- 1.1 Install React, Zustand, Vite plugin
-- 1.2 Create store slices (conversation, toolbar, composer)
-- 1.3 Merge app logic into `index.tsx`
-- 1.4 Build `useAnimations` hook
-- 1.5 Update Vite config
+### Phase 1: Foundation (5 steps)
+- 1.1 Install React dependencies and update Vite config with React plugin
+- 1.2 Create Zustand store slices (useConversationStore, useToolbarStore, useComposerStore) with all state properties and actions
+- 1.3 Create unified useAnimations hook with all animation functions (scheduleCollapseTimeout, animateSearchTransform, animateComposeRotation, animateBezelPulse, cancelAll)
+- 1.4 Create root component skeleton in index.tsx with React.StrictMode, mainElement state, and isOverlayVisible state
+- 1.5 Set up store index.ts to export all stores
 
-### Phase 2: Toolbar ✓
-- 2.1 Convert `Toolbar` + child components
-- 2.2 Implement `SearchInput` with animation
-- 2.3 Build `FilterButtons` with rotation
-- 2.4 Wire up `useToolbarStore`
+### Phase 2: Toolbar (8 steps)
+- 2.1 Create ToolbarButton component with ToolbarButtonProps interface, icon rendering from constants.ts, and hover state
+- 2.2 Create Toolbar container with gradient overlay, wire up useToolbarStore and useComposerStore, implement handleNewEmailClick with useAnimations
+- 2.3 Create SearchInput with controlled input, debounced onChange (300ms), inputRef auto-focus, Escape key handler, and onBlur close behavior
+- 2.4 Wire up useToolbarStore actions (setSearchQuery, toggleSearch) in SearchInput
+- 2.5 Create FilterButtons with rotatingType state, wire up useToolbarStore (filterButtonOrder, isFilterCollapsed), implement handleFilterClick with rotation animation
+- 2.6 Render dynamically ordered ToolbarButton components and vertical divider in FilterButtons
+- 2.7 Render complete Toolbar in root index.tsx component
+- 2.8 Test toolbar interactions (new email, search transform, filter rotation)
 
-### Phase 3: Conversations ✓
-- 3.1 Convert `ConversationItem` + children
-- 3.2 Implement `useConversations` hook (throttled)
-- 3.3 Build `ConversationDetails`, `ActionButtons`
-- 3.4 Add `React.memo` optimization
+### Phase 3: Conversation List (10 steps)
+- 3.1 Create ConversationList container, wire up useConversationStore and useToolbarStore, implement search and filter logic with containerRef
+- 3.2 Create ConversationItem with ConversationItemProps, wire up useConversationStore actions, add isHovered and collapseTimeoutId state
+- 3.3 Implement expand/collapse behavior in ConversationItem (onClick, onMouseEnter, onMouseLeave with useAnimations scheduleCollapseTimeout)
+- 3.4 Create ActionButtons with ActionButtonsProps, wire up dismissConversation and animateBezelPulse, render archive/delete SVG icons with opacity transitions
+- 3.5 Render ActionButtons inside ConversationItem with conversationId and isHovered props, position top-right with click propagation prevention
+- 3.6 Create ConversationDetails with ConversationDetailsProps, wire up setConversationMode, render sender/subject/snippet/timestamp with truncation
+- 3.7 Add reply and forward action links to ConversationDetails with conditional rendering based on isExpanded
+- 3.8 Render ConversationDetails inside ConversationItem with conversation and isExpanded props
+- 3.9 Create useConversations hook with throttled (300ms) MutationObserver, import extractConversationData, wire up setConversations, add cleanup
+- 3.10 Wire useConversations into root index.tsx, add Gmail container query, wrap ConversationItem/ActionButtons/ConversationDetails with React.memo, render ConversationList
 
-### Phase 4: Composer ✓
-- 4.1 Convert `ComposerBox` + children
-- 4.2 Build `ComposerField`, `ComposerActions`, `CollapsedDraft`
-- 4.3 Wire up `useComposerStore`
-- 4.4 Implement draft persistence
+### Phase 4: Composer (9 steps)
+- 4.1 Create ComposerField with ComposerFieldProps, isFocused state, render input/textarea based on prop, implement onChange/onFocus/onBlur, add error message and validation styling
+- 4.2 Create ComposerActions with ComposerActionsProps, render Send/Close/Attach buttons with disabled logic and spinner when isSending
+- 4.3 Create CollapsedDraft with CollapsedDraftProps, isHovered state, render recipient/subject previews with truncation and expand icon, implement onClick → onExpand
+- 4.4 Create ComposerBox skeleton with ComposerBoxProps, wire up useComposerStore (all draft/send/expand actions), import useAnimations
+- 4.5 Add isExpanded, isDirty, formRef state to ComposerBox, implement onExpand/onCollapse/onFieldChange handlers with debounced saveDraft
+- 4.6 Implement form validation and onSend handler in ComposerBox with empty draft validation, animateBezelPulse feedback, sendEmail + removeComposeBox sequence
+- 4.7 Render CollapsedDraft and ComposerField components (to/subject/body) in ComposerBox with conditional logic, add ComposerActions at bottom
+- 4.8 Add standalone positioning (bottom-right) and nested positioning (inside card) styles to ComposerBox
+- 4.9 Render standalone ComposerBox instances in root index.tsx (map composeBoxCount), render nested ComposerBox inside ConversationItem with conditional mode rendering
 
-### Phase 5: Testing ✓
-- 5.1 Migrate event handlers
-- 5.2 Implement `useClickOutside`
-- 5.3 Test all interactions
-- 5.4 Performance audit with React DevTools
+### Phase 5: Integration & Testing (16 steps)
+- 5.1 Create useClickOutside hook with ref and handler parameters, implement mousedown listener with contains() check, add cleanup
+- 5.2 Import and wire useClickOutside for SearchInput in Toolbar and standalone ComposerBox in index.tsx
+- 5.3 Remove legacy files (EventCoordinator.ts, UIState.ts, ToolbarBuilder.ts, ConversationItemBuilder.ts, ResponseBoxBuilder.ts, AnimationController.ts, minimalInboxRenderer.ts)
+- 5.4 Update build script to use React JSX transform
+- 5.5 Test toolbar interactions (new email → compose box, search → transform animation, filter rotation)
+- 5.6 Test conversation interactions (expand on click, collapse on hover exit after 600ms)
+- 5.7 Test action buttons (archive/delete → dismissConversation)
+- 5.8 Test conversation details (reply/forward → composer opens in card)
+- 5.9 Test composer field interactions (changes → debounced saveDraft)
+- 5.10 Test composer send validation (empty fields → bezel pulse, valid fields → email sent + box removed)
+- 5.11 Test composer close (draft persisted)
+- 5.12 Test click outside behavior (search closes, composer stays open)
+- 5.13 Run React DevTools profiler, verify React.memo prevents re-renders on ConversationItem/ActionButtons/ConversationDetails
+- 5.14 Verify 300ms throttle on useConversations parsing, check for excessive re-renders
+- 5.15 Test keyboard navigation (Tab, Enter, Escape), verify Gmail navigation updates conversations
+- 5.16 Audit z-index layering and verify no style conflicts with Gmail UI, compare bundle size vs vanilla implementation
 
 ---
 
