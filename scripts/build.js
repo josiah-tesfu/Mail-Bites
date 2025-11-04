@@ -19,7 +19,7 @@ const esbuild = require('esbuild');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const EXTENSION_DIR = path.join(PROJECT_ROOT, 'extension');
-const ENTRY_POINT = path.join(PROJECT_ROOT, 'src', 'content', 'index.ts');
+const ENTRY_POINT = path.join(PROJECT_ROOT, 'src', 'content', 'index.tsx');
 const OUTPUT_JS = path.join(EXTENSION_DIR, 'content-script.js');
 const SOURCE_CSS = path.join(PROJECT_ROOT, 'src', 'content', 'styles', 'content.css');
 const OUTPUT_CSS = path.join(EXTENSION_DIR, 'content.css');
@@ -120,6 +120,10 @@ const buildOptions = {
   target: ['chrome109'],
   platform: 'browser',
   logLevel: 'info',
+  loader: {
+    '.ts': 'ts',
+    '.tsx': 'tsx'
+  },
   plugins: [
     {
       name: 'mail-bites-copy-css',

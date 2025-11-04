@@ -436,35 +436,35 @@ User clicks Reply button
 ## Migration Checklist
 
 ### Phase 1: Foundation ✓
-- [ ] Install React, Zustand, Vite plugin
-- [ ] Create store slices (conversation, toolbar, composer)
-- [ ] Merge app logic into `index.tsx`
-- [ ] Build `useAnimations` hook
-- [ ] Update Vite config
+- 1.1 Install React, Zustand, Vite plugin
+- 1.2 Create store slices (conversation, toolbar, composer)
+- 1.3 Merge app logic into `index.tsx`
+- 1.4 Build `useAnimations` hook
+- 1.5 Update Vite config
 
 ### Phase 2: Toolbar ✓
-- [ ] Convert `Toolbar` + child components
-- [ ] Implement `SearchInput` with animation
-- [ ] Build `FilterButtons` with rotation
-- [ ] Wire up `useToolbarStore`
+- 2.1 Convert `Toolbar` + child components
+- 2.2 Implement `SearchInput` with animation
+- 2.3 Build `FilterButtons` with rotation
+- 2.4 Wire up `useToolbarStore`
 
 ### Phase 3: Conversations ✓
-- [ ] Convert `ConversationItem` + children
-- [ ] Implement `useConversations` hook (throttled)
-- [ ] Build `ConversationDetails`, `ActionButtons`
-- [ ] Add `React.memo` optimization
+- 3.1 Convert `ConversationItem` + children
+- 3.2 Implement `useConversations` hook (throttled)
+- 3.3 Build `ConversationDetails`, `ActionButtons`
+- 3.4 Add `React.memo` optimization
 
 ### Phase 4: Composer ✓
-- [ ] Convert `ComposerBox` + children
-- [ ] Build `ComposerField`, `ComposerActions`, `CollapsedDraft`
-- [ ] Wire up `useComposerStore`
-- [ ] Implement draft persistence
+- 4.1 Convert `ComposerBox` + children
+- 4.2 Build `ComposerField`, `ComposerActions`, `CollapsedDraft`
+- 4.3 Wire up `useComposerStore`
+- 4.4 Implement draft persistence
 
 ### Phase 5: Testing ✓
-- [ ] Migrate event handlers
-- [ ] Implement `useClickOutside`
-- [ ] Test all interactions
-- [ ] Performance audit with React DevTools
+- 5.1 Migrate event handlers
+- 5.2 Implement `useClickOutside`
+- 5.3 Test all interactions
+- 5.4 Performance audit with React DevTools
 
 ---
 

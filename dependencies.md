@@ -1,8 +1,14 @@
 # Dependency Tree
 
 - Omitted external `node_modules/` packages from this hierarchy.
-- `src/content/index.ts:1` — Boots the Mail Bites content script once Gmail’s DOM is ready (imports: `./app.ts`).
-  - `src/content/app.ts:1` — Coordinates overlay lifecycle, Gmail view tracking, and font setup (imports: `./logger.ts`, `./viewTracker.ts`, `./ui/minimalInboxRenderer.ts`, `./fontLoader.ts`).
+- `src/content/index.tsx:1` — Boots the Mail Bites React root and coordinates Gmail view tracking with the legacy renderer (imports: `react`, `react-dom/client`, `./fontLoader.ts`, `./logger.ts`, `./store`, `./ui/minimalInboxRenderer.ts`, `./viewTracker.ts`).
+- `src/content/hooks/useAnimations.ts:1` — React hook that schedules toolbar/search/composer animations with tracked timeouts (imports: `react`).
+- `src/content/store/index.ts:1` — Re-exports all Zustand slices for consumption by React components (imports: `./useConversationStore.ts`, `./useToolbarStore.ts`, `./useComposerStore.ts`).
+  - `src/content/store/useConversationStore.ts:1` — Manages conversation list state, expansion, dismissal, and hover timing (imports: `zustand`, `../ui/conversationParser.ts`).
+  - `src/content/store/useToolbarStore.ts:1` — Tracks toolbar search state, filter ordering, and collapse behavior (imports: `zustand`).
+  - `src/content/store/useComposerStore.ts:1` — Handles compose box counts, drafts, and animation flags (imports: `zustand`, `../types/draft.ts`).
+- `src/content/types/draft.ts:1` — Declares the shared `DraftData` interface for compose state (imports: none).
+- `vite.config.ts:1` — Vite bundler configuration with React plugin and shared path aliases (imports: `vite`, `@vitejs/plugin-react`, `path`).
     - `src/content/logger.ts:1` — Provides a console wrapper that prefixes Mail Bites logs (imports: none).
     - `src/content/viewTracker.ts:1` — Debounced observer that detects Gmail SPA navigation and DOM changes (imports: `./logger.ts`, `./navigation.ts`).
       - `src/content/navigation.ts:1` — Monkey-patches History API methods to notify registered navigation listeners (imports: none).
@@ -27,6 +33,7 @@
 - `tests/setup/vitest.setup.ts:1` — Sets up a mocked Chrome API and Vitest helpers for unit tests (imports: `vitest`).
 - `tests/unit/conversationParser.test.ts:1` — Validates Gmail row parsing logic against various DOM scenarios (imports: `vitest`, `@/content/ui/conversationParser`).
 - `tests/unit/minimalInboxRenderer.test.ts:1` — Exercises the renderer’s filtering, expansion, and response flows in jsdom (imports: `vitest`, `@/content/ui/minimalInboxRenderer`, `@/content/viewTracker` types).
+- `tests/unit/store/stores.test.ts:1` — Verifies Zustand store behaviors for conversations, toolbar, and composer slices (imports: `vitest`, `@/content/store`, `@/content/ui/conversationParser`, `@/content/types/draft`).
 - `tests/unit/fontLoader.test.ts:1` — Confirms the font loader injects a single stylesheet link (imports: `vitest`, `@/content/fontLoader`).
 - `tests/unit/README.md:1` — Documents goals and structure of the unit test suite (imports: none).
 - `tests/integration/README.md:1` — Describes the Playwright extension test strategy and setup (imports: none).
