@@ -1,9 +1,14 @@
-import { StrictMode, useEffect, useRef, useState } from 'react';
+import { StrictMode, useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
+import ConversationList from './components/ConversationList/ConversationList';
+import ComposerBox from './components/ComposerBox';
+import { Toolbar } from './components/Toolbar/Toolbar';
 import { ensureManropeFont } from './fontLoader';
 import { logger } from './logger';
-import { resetComposerStore, resetConversationStore, resetToolbarStore } from './store';
+import { resetComposerStore, resetConversationStore, resetToolbarStore, useComposerStore, useConversationStore } from './store';
+import type { ComposerActionType } from './ui/types/actionTypes';
+import type { ConversationData } from './ui/conversationParser';
 import { MinimalInboxRenderer } from './ui/minimalInboxRenderer';
 import { GmailViewTracker, type ViewContext } from './viewTracker';
 
@@ -26,9 +31,16 @@ const MailBitesApp = ({ host }: { host: HTMLElement }) => {
   const rendererRef = useRef<MinimalInboxRenderer | null>(null);
   const activeMainElementRef = useRef<HTMLElement | null>(null);
   const hasWarnedMissingMainRef = useRef(false);
+  const mouseDownTargetRef = useRef<HTMLElement | null>(null);
   const [viewContext, setViewContext] = useState<ViewContext | null>(null);
   const [mainElement, setMainElement] = useState<HTMLElement | null>(null);
   const [isOverlayVisible, setOverlayVisible] = useState(false);
+
+  // Store subscriptions for standalone compose boxes
+  const composeBoxCount = useComposerStore((state) => state.composeBoxCount);
+  const composeDrafts = useComposerStore((state) => state.composeDrafts);
+  const expandedComposeIndex = useComposerStore((state) => state.expandedComposeIndex);
+  const setExpandedComposeIndex = useComposerStore((state) => state.setExpandedComposeIndex);
 
   if (!rendererRef.current) {
     rendererRef.current = new MinimalInboxRenderer();
@@ -72,6 +84,74 @@ const MailBitesApp = ({ host }: { host: HTMLElement }) => {
   useEffect(() => {
     host.style.display = isOverlayVisible ? 'block' : 'none';
   }, [host, isOverlayVisible]);
+
+  // Handle standalone compose box actions
+  const handleStandaloneComposerAction = useCallback((
+    type: ComposerActionType,
+    conversation: ConversationData | null,
+    composeIndex?: number
+  ) => {
+    // TODO: Implement composer actions in Phase 4
+    logger.info('Standalone composer action:', type, composeIndex);
+  }, []);
+
+  // Handle compose box click to expand
+  const handleComposeBoxClick = useCallback((index: number) => {
+    if (expandedComposeIndex === index) {
+      setExpandedComposeIndex(null);
+    } else {
+      setExpandedComposeIndex(index);
+    }
+  }, [expandedComposeIndex, setExpandedComposeIndex]);
+
+  // Click-outside handler to collapse expanded conversations
+  const handleClickOutside = useCallback((event: MouseEvent) => {
+    const target = event.target as HTMLElement;
+    
+    // Don't collapse if clicking inside conversation item or composer
+    const mouseDownInItem = mouseDownTargetRef.current?.closest('.mail-bites-item');
+    const mouseDownInResponseBox = mouseDownTargetRef.current?.closest('.mail-bites-response-box');
+    
+    if (mouseDownInItem || mouseDownInResponseBox) {
+      return;
+    }
+    
+    const closestItem = target.closest('.mail-bites-item');
+    const closestResponseBox = target.closest('.mail-bites-response-box');
+    
+    if (closestItem || closestResponseBox) {
+      return;
+    }
+    
+    // Collapse expanded conversation if any
+    const expandedId = useConversationStore.getState().expandedId;
+    if (expandedId) {
+      logger.info('Collapsing conversation via click-outside', { expandedId });
+      useConversationStore.getState().collapseConversation(expandedId);
+    }
+    
+    // Collapse expanded compose box if any
+    if (expandedComposeIndex !== null) {
+      logger.info('Collapsing compose box via click-outside', { expandedComposeIndex });
+      setExpandedComposeIndex(null);
+    }
+  }, [expandedComposeIndex, setExpandedComposeIndex]);
+
+  useEffect(() => {
+    if (!isOverlayVisible) return;
+    
+    const handleMouseDown = (event: MouseEvent) => {
+      mouseDownTargetRef.current = event.target as HTMLElement;
+    };
+    
+    document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('click', handleClickOutside);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [isOverlayVisible, handleClickOutside]);
 
   useEffect(() => {
     const overlayRoot = overlayRef.current;
@@ -131,12 +211,44 @@ const MailBitesApp = ({ host }: { host: HTMLElement }) => {
   }, [host]);
 
   return (
-    <div
-      ref={overlayRef}
-      className="mail-bites-overlay"
-      data-mail-bites="overlay"
-      aria-hidden={!isOverlayVisible}
-    />
+    <>
+      {isOverlayVisible && (
+        <>
+          <Toolbar />
+          <ConversationList 
+            composeBoxes={composeBoxCount > 0 ? (
+              Array.from({ length: composeBoxCount }, (_, index) => {
+                const draft = composeDrafts.get(index);
+                const isExpanded = expandedComposeIndex === index;
+                
+                return (
+                  <div
+                    key={index}
+                    onClick={() => !isExpanded && handleComposeBoxClick(index)}
+                    style={{ cursor: !isExpanded ? 'pointer' : 'auto' }}
+                  >
+                    <ComposerBox
+                      conversation={null}
+                      mode="compose"
+                      composeIndex={index}
+                      isExpanded={isExpanded}
+                      draft={draft}
+                      onAction={handleStandaloneComposerAction}
+                    />
+                  </div>
+                );
+              })
+            ) : undefined}
+          />
+        </>
+      )}
+      <div
+        ref={overlayRef}
+        className="mail-bites-overlay"
+        data-mail-bites="overlay"
+        aria-hidden={!isOverlayVisible}
+      />
+    </>
   );
 };
 

@@ -665,3 +665,6 @@
 .mail-bites-response-body {
   flex: 1 1 auto;
 }
+
+/* === Standalone Compose Boxes === */
+/* Compose boxes now render inline at top of conversation list */

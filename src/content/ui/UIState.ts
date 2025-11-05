@@ -1,4 +1,7 @@
 import type { ConversationData } from './conversationParser';
+import { useConversationStore } from '../store/useConversationStore';
+import { useToolbarStore } from '../store/useToolbarStore';
+import { useComposerStore } from '../store/useComposerStore';
 
 export interface ComposeDraftData {
   recipients: string;
@@ -140,6 +143,8 @@ export class UIState {
 
   setConversations(value: ConversationData[]): void {
     this.conversations = value;
+    // Sync with Zustand store for React components
+    useConversationStore.getState().setConversations(value);
   }
 
   setHighlightedId(value: string | null): void {

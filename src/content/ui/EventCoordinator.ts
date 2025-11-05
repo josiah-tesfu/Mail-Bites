@@ -2,7 +2,6 @@ import type { ActionType, PreviewActionType, ComposerActionType } from './types/
 import type { ConversationData } from './conversationParser.js';
 import { UIState, ComposeDraftData } from './UIState.js';
 import { AnimationController } from './AnimationController.js';
-import { ToolbarBuilder } from './builders/ToolbarBuilder.js';
 import { logger } from '../logger.js';
 
 /**
@@ -17,8 +16,7 @@ export class EventCoordinator {
   constructor(
     private state: UIState,
     private animator: AnimationController,
-    private triggerRender: () => void,
-    private toolbarBuilder: ToolbarBuilder
+    private triggerRender: () => void
   ) {}
 
   /**
@@ -322,9 +320,11 @@ export class EventCoordinator {
           }
           
           // Pulse the empty draft box
-          expandedBox.classList.remove('mail-bites-anim-bezel-surface');
-          void expandedBox.offsetWidth;
-          expandedBox.classList.add('mail-bites-anim-bezel-surface');
+          if (expandedBox instanceof HTMLElement) {
+            expandedBox.classList.remove('mail-bites-anim-bezel-surface');
+            void expandedBox.offsetWidth;
+            expandedBox.classList.add('mail-bites-anim-bezel-surface');
+          }
           
           return;
         }
@@ -477,38 +477,11 @@ export class EventCoordinator {
 
   /**
    * Phase 4.4: Restore search button from search input
+   * Note: Toolbar now handled by React - this method is deprecated
    */
   private restoreSearchButton(searchInput: HTMLInputElement): void {
-    const toolbar = searchInput.closest('.mail-bites-toolbar');
-    if (!toolbar) {
-      this.state.setIsSearchActive(false);
-      return;
-    }
-
-    // Cancel any ongoing search animations
-    this.animator.cancelAnimation('search-shrink');
-    this.animator.cancelAnimation('search-transform');
-    this.animator.cancelAnimation('search-restore');
-
-    const newToolbar = this.toolbarBuilder.build(
-      this.state.getFilterPrimaryAction(),
-      this.state.getIsFilterCollapsed(),
-      (type, button) => {}
-    );
-    const searchButton = newToolbar.querySelector('.mail-bites-toolbar-action-search');
-    
-    if (searchButton) {
-      // Add appearing animation class
-      searchButton.classList.add('is-appearing');
-    }
-    
-    // Replace entire toolbar
-    toolbar.replaceWith(newToolbar);
-    
-    // Reset state and trigger re-render to attach event handlers
     this.state.setIsSearchActive(false);
     this.state.setSearchQuery('');
-    this.triggerRender();
   }
 
   /**

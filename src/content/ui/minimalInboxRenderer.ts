@@ -14,7 +14,6 @@ import type {
 import { AnimationController } from './AnimationController';
 import { UIState } from './UIState';
 import { ConversationItemBuilder } from './builders/ConversationItemBuilder';
-import { ToolbarBuilder } from './builders/ToolbarBuilder';
 import { ResponseBoxBuilder } from './builders/ResponseBoxBuilder';
 import { EventCoordinator } from './EventCoordinator';
 
@@ -30,8 +29,6 @@ export class MinimalInboxRenderer {
   private animator = new AnimationController();
   // Phase 3.2: ConversationItemBuilder instance for DOM building
   private itemBuilder = new ConversationItemBuilder();
-  // Phase 3.6: ToolbarBuilder instance for toolbar DOM building
-  private toolbarBuilder = new ToolbarBuilder();
   // Phase 3.7: ResponseBoxBuilder instance for response box DOM building
   private responseBoxBuilder = new ResponseBoxBuilder();
   // Phase 4.1: EventCoordinator instance for event handling
@@ -39,12 +36,10 @@ export class MinimalInboxRenderer {
 
   constructor() {
     // Phase 4.2: Initialize EventCoordinator with dependencies
-    // Phase 4.4: Added toolbarBuilder dependency
     this.eventCoordinator = new EventCoordinator(
       this.state,
       this.animator,
-      () => this.renderList(),
-      this.toolbarBuilder
+      () => this.renderList()
     );
   }
 
@@ -203,18 +198,8 @@ export class MinimalInboxRenderer {
 
     const pendingHoverId = this.state.getPendingHoverId(); // Phase 1.5: Read from UIState
     
-    // Check if we're re-rendering an already expanded email (to prevent flicker)
-    const wasAlreadyExpanded = this.state.getExpandedId() &&  // Phase 1.5: Read from UIState
-      container.querySelector(`article.mail-bites-item[data-conversation-id="${this.state.getExpandedId()}"]`) !== null; // Phase 1.5: Read from UIState
-
-    // Preserve the existing toolbar when search is active or new email button is animating
-    const existingToolbar = container.querySelector('.mail-bites-toolbar');
-    const shouldPreserveToolbar = this.state.getIsSearchActive() || 
-      existingToolbar?.querySelector('.mail-bites-anim-rotate-close') ||
-      this.state.getIsComposingAnimating();
-    const toolbarToReuse = shouldPreserveToolbar ? existingToolbar : null;
-    
-    container.innerHTML = '';
+    // LEGACY RENDERING DISABLED - React components handle conversation rendering
+    // Only manage container classes for highlight state
     
     // Only show highlight if there's an expanded email or expanded compose box
     const hasExpandedEmail = Boolean(this.state.getHighlightedId());
@@ -228,77 +213,20 @@ export class MinimalInboxRenderer {
       'is-composing-animating',
       this.state.getIsComposingAnimating()
     );
-    if (this.state.getHighlightedId()) { // Phase 1.5: Read from UIState
-      container.dataset.highlightId = this.state.getHighlightedId()!; // Phase 1.5: Read from UIState
+    if (this.state.getHighlightedId()) {
+      container.dataset.highlightId = this.state.getHighlightedId()!;
     } else {
       delete container.dataset.highlightId;
     }
 
-    // Reuse existing toolbar if available, otherwise build a new one
-    const toolbar = toolbarToReuse || this.buildToolbar();
-    
-    container.appendChild(toolbar);
-
-    // Render standalone compose boxes
-    if (this.state.getIsComposing()) {
-      const composeBoxCount = this.state.getComposeBoxCount();
-      const expandedComposeIndex = this.state.getExpandedComposeIndex();
-      const composeDrafts = this.state.getComposeDrafts();
-      
-      for (let i = 0; i < composeBoxCount; i++) {
-        const isExpanded = expandedComposeIndex === i;
-        const draft = composeDrafts.get(i);
-        const composeBox = this.buildComposeBox(i, draft, isExpanded);
-        container.appendChild(composeBox);
-      }
-    }
-
-    if (this.state.getConversations().length === 0) { // Phase 1.5: Read from UIState
-      const emptyState = document.createElement('p');
-      emptyState.className = 'mail-bites-empty';
-      emptyState.textContent =
-        'No unread emails in the Primary inbox.';
-      container.appendChild(emptyState);
-      this.state.setPendingHoverId(null); // Phase 1.5: Write to UIState only
-      this.state.setCollapseAnimationId(null); // Phase 1.5: Write to UIState only
-      return;
-    }
-
-    for (const conversation of this.state.getConversations()) { // Phase 1.3: Read from UIState
-      const isRerender = Boolean(wasAlreadyExpanded && conversation.id === this.state.getExpandedId()); // Phase 1.3: Read from UIState
-      const item = this.buildItem(conversation, isRerender);
-      if (pendingHoverId && conversation.id === pendingHoverId) {
-        item.classList.add('is-hovered');
-      }
-      if (
-        this.state.getCollapseAnimationId() === conversation.id &&
-        this.state.getCollapsingId() !== conversation.id
-      ) { // Phase 1.5: Read from UIState
-        item.classList.remove('mail-bites-anim-bezel');
-        void item.offsetWidth;
-        item.classList.add('mail-bites-anim-bezel');
-        item.addEventListener(
-          'animationend',
-          () => {
-            item.classList.remove('mail-bites-anim-bezel');
-          },
-          { once: true }
-        );
-      }
-      container.appendChild(item);
-
-      if (conversation.mode !== 'read') {
-        const responseBox = this.buildResponseBox(conversation);
-        container.appendChild(responseBox);
-      }
-    }
-    this.state.setPendingHoverId(null); // Phase 1.5: Write to UIState only
-    this.state.setCollapseAnimationId(null); // Phase 1.5: Write to UIState only
-    this.state.setCollapsingId(null); // Phase 1.5: Write to UIState only
+    // Clear pending animation state
+    this.state.setPendingHoverId(null);
+    this.state.setCollapseAnimationId(null);
+    this.state.setCollapsingId(null);
   }
 
-  // Phase 3.5: Delegate to ConversationItemBuilder.build()
-  // Phase 4.2: Added onHover callback delegation
+  // LEGACY METHOD - No longer used, React components handle conversation rendering
+  // Kept for potential rollback during migration
   private buildItem(conversation: ConversationData, skipExpandAnimation = false): HTMLElement {
     return this.itemBuilder.build(
       conversation,
@@ -353,7 +281,7 @@ export class MinimalInboxRenderer {
 
   // Phase 3.4: buildPreviewActions and buildPreviewActionButton moved to ConversationItemBuilder
 
-  // Phase 3.7: Delegate to ResponseBoxBuilder.build()
+  // LEGACY METHOD - No longer used, React components handle composer rendering
   private buildResponseBox(conversation: ConversationData): HTMLElement {
     return this.responseBoxBuilder.build(
       conversation,
@@ -362,7 +290,7 @@ export class MinimalInboxRenderer {
     );
   }
 
-  // Build standalone compose box
+  // LEGACY METHOD - No longer used, React components handle standalone compose boxes
   private buildComposeBox(
     composeIndex: number,
     draft: { recipients: string; subject: string; message: string } | undefined,
@@ -385,41 +313,5 @@ export class MinimalInboxRenderer {
   }
 
   // Phase 3.7: buildComposerActions and buildComposerActionButton moved to ResponseBoxBuilder
-
-  // Phase 3.6: Delegate to ToolbarBuilder.build()
-  private buildToolbar(): HTMLElement {
-    return this.toolbarBuilder.build(
-      this.state.getFilterPrimaryAction(),
-      this.state.getIsFilterCollapsed(),
-      (type, button) => this.handleToolbarButtonClick(type, button)
-    );
-  }
-
-  // Phase 3.6: Toolbar button click coordinator
-  // Phase 4.4: Delegate to EventCoordinator
-  private handleToolbarButtonClick(type: ToolbarActionType, button: HTMLButtonElement): void {
-    // Close search if active
-    if (this.state.getIsSearchActive()) {
-      const searchInput = this.state.getContainer()?.querySelector('.mail-bites-search-input') as HTMLInputElement;
-      if (searchInput) {
-        this.eventCoordinator.handleSearchClose(searchInput);
-      }
-    }
-    
-    // Collapse any expanded email when clicking toolbar buttons
-    if (this.state.getExpandedId()) {
-      this.toggle(this.state.getExpandedId()!);
-    }
-    
-    if (type === 'search') {
-      this.eventCoordinator.handleSearchButtonClick(button);
-    } else if (type === 'new-email') {
-      this.eventCoordinator.handleNewEmailClick();
-    } else if (type === 'unread' || type === 'read' || type === 'draft') {
-      this.eventCoordinator.handleFilterButtonClick(type, button);
-    }
-  }
-
-  // Phase 3.6: buildToolbarButton and buildExpandedIcon moved to ToolbarBuilder
-  // Phase 4.4: handleMoreThingsClick, handleSearchButtonClick, transformToSearchBar, restoreSearchButton moved to EventCoordinator
+  // Toolbar rendering removed - now handled by React components
 }
