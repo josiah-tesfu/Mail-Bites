@@ -150,7 +150,6 @@
   height: 1px;
   width: 0;
   background: linear-gradient(to right, #888888 0%, #888888 70%, transparent 100%);
-  animation: mail-bites-search-underline 0.15s ease-out 0.1s forwards;
 }
 
 /* Search input styling */
@@ -165,7 +164,6 @@
   outline: none;
   padding: 0;
   caret-color: #111111;
-  animation: mail-bites-search-appear 0.1s ease-in forwards;
   /* Position so caret starts at center of where button was */
   transform-origin: left center;
   display: block;
@@ -176,18 +174,6 @@
   color: transparent;
 }
 
-/* Growing animation for restored search button */
-.mail-bites-toolbar .mail-bites-action.is-appearing {
-  animation: mail-bites-button-appear 0.15s ease-in forwards;
-}
-
-/* Expanding animation for more-things expanded icons */
-/* Starts at 150ms (50% through button slide), runs for 250ms */
-/* Animation class is removed after completion so icons behave like normal toolbar buttons */
-.mail-bites-toolbar .mail-bites-action.is-appearing-expanded {
-  animation: mail-bites-expanded-icon-appear 0.25s ease-out forwards;
-}
-
 .mail-bites-inline-composer {
   width: 100%;
   margin: 0;
@@ -195,52 +181,6 @@
 
 .mail-bites-inline-composer .mail-bites-response-box {
   margin: 12px 0 24px;
-}
-
-@keyframes mail-bites-search-appear {
-  0% {
-    width: 0;
-    opacity: 0;
-    /* Start 10px to the right (at center of 20px button) */
-    margin-left: 10px;
-  }
-  100% {
-    width: 400px;
-    opacity: 1;
-    /* End at normal position */
-    margin-left: 0;
-  }
-}
-
-@keyframes mail-bites-search-underline {
-  0% {
-    width: 0;
-  }
-  100% {
-    width: 100%;
-  }
-}
-
-@keyframes mail-bites-button-appear {
-  0% {
-    transform: scale(0);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-@keyframes mail-bites-expanded-icon-appear {
-  0% {
-    transform: scale(0);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 0.4; /* Match toolbar button default opacity */
-  }
 }
 
 /* === Empty State === */

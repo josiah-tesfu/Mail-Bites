@@ -87,3 +87,68 @@
     transform: rotate(0deg);
   }
 }
+
+/* === Search & Toolbar Animations === */
+
+@keyframes mail-bites-search-appear {
+  0% {
+    width: 0;
+    opacity: 0;
+    /* Start 10px to the right (at center of 20px button) */
+    margin-left: 10px;
+  }
+  100% {
+    width: 400px;
+    opacity: 1;
+    /* End at normal position */
+    margin-left: 0;
+  }
+}
+
+@keyframes mail-bites-search-underline {
+  0% {
+    width: 0;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+@keyframes mail-bites-button-appear {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes mail-bites-expanded-icon-appear {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.4; /* Match toolbar button default opacity */
+  }
+}
+
+/* Animation assignments kept here so structural styles stay in content.css */
+.mail-bites-search-container::after {
+  animation: mail-bites-search-underline 0.15s ease-out 0.1s forwards;
+}
+
+.mail-bites-search-input {
+  animation: mail-bites-search-appear 0.1s ease-in forwards;
+}
+
+.mail-bites-toolbar .mail-bites-action.is-appearing {
+  animation: mail-bites-button-appear 0.15s ease-in forwards;
+}
+
+.mail-bites-toolbar .mail-bites-action.is-appearing-expanded {
+  animation: mail-bites-expanded-icon-appear 0.25s ease-out forwards;
+}
