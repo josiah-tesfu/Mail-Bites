@@ -13,6 +13,9 @@ interface ConversationState {
   conversationModes: Map<string, ConversationMode>;
   collapsingId: string | null;
   pendingHoverId: string | null;
+  readIds: Set<string>;
+  hoveredIds: Set<string>;
+  collapseAnimationId: string | null;
 }
 
 interface ConversationActions {
@@ -26,6 +29,12 @@ interface ConversationActions {
   setPendingHoverId: (id: string | null) => void;
   clearCollapseState: () => void;
   setCollapsingId: (id: string | null) => void;
+  setReadIds: (ids: Set<string>) => void;
+  markAsRead: (id: string) => void;
+  setHoveredIds: (ids: Set<string>) => void;
+  addHoveredId: (id: string) => void;
+  removeHoveredId: (id: string) => void;
+  setCollapseAnimationId: (id: string | null) => void;
   reset: () => void;
 }
 
@@ -39,7 +48,10 @@ const createInitialState = (): ConversationState => ({
   fadingOutIds: new Set<string>(),
   conversationModes: new Map<string, ConversationMode>(),
   collapsingId: null,
-  pendingHoverId: null
+  pendingHoverId: null,
+  readIds: new Set<string>(),
+  hoveredIds: new Set<string>(),
+  collapseAnimationId: null
 });
 
 export const useConversationStore = create<ConversationStore>((set, get) => ({
@@ -123,6 +135,49 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
   },
   setCollapsingId: (id) => {
     set({ collapsingId: id });
+  },
+  setReadIds: (ids) => {
+    set({ readIds: new Set(ids) });
+  },
+  markAsRead: (id) => {
+    set((state) => {
+      const readIds = new Set(state.readIds);
+      readIds.add(id);
+
+      const conversations = state.conversations.map((conversation) =>
+        conversation.id === id
+          ? {
+              ...conversation,
+              isUnread: false
+            }
+          : conversation
+      );
+
+      return { readIds, conversations };
+    });
+  },
+  setHoveredIds: (ids) => {
+    set({ hoveredIds: new Set(ids) });
+  },
+  addHoveredId: (id) => {
+    set((state) => {
+      const next = new Set(state.hoveredIds);
+      next.add(id);
+      return { hoveredIds: next };
+    });
+  },
+  removeHoveredId: (id) => {
+    set((state) => {
+      if (!state.hoveredIds.has(id)) {
+        return state;
+      }
+      const next = new Set(state.hoveredIds);
+      next.delete(id);
+      return { hoveredIds: next };
+    });
+  },
+  setCollapseAnimationId: (id) => {
+    set({ collapseAnimationId: id });
   },
   reset: () => {
     set(() => ({

@@ -2,6 +2,7 @@ import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import type { ConversationData } from '../../ui/conversationParser';
 import type { ComposerActionType } from '../../ui/types/actionTypes';
 import { useConversationStore } from '../../store/useConversationStore';
+import { logger } from '../../logger';
 import { useAnimations } from '../../hooks/useAnimations';
 import ConversationDetails from './ConversationDetails';
 import ComposerBox from '../ComposerBox';
@@ -33,10 +34,14 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
   const highlightedId = useConversationStore((state) => state.highlightedId);
   const fadingOutIds = useConversationStore((state) => state.fadingOutIds);
   const conversationModes = useConversationStore((state) => state.conversationModes);
+  const setConversationMode = useConversationStore((state) => state.setConversationMode);
   const expandConversation = useConversationStore((state) => state.expandConversation);
   const collapseConversation = useConversationStore((state) => state.collapseConversation);
   const dismissConversation = useConversationStore((state) => state.dismissConversation);
   const finalizeDismiss = useConversationStore((state) => state.finalizeDismiss);
+  const markAsRead = useConversationStore((state) => state.markAsRead);
+  const addHoveredId = useConversationStore((state) => state.addHoveredId);
+  const removeHoveredId = useConversationStore((state) => state.removeHoveredId);
 
   // Local state
   const [isHovered, setIsHovered] = useState(false);
@@ -61,32 +66,50 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
   // Handle mouse enter - cancel scheduled collapse
   const handleMouseEnter = useCallback(() => {
     setIsHovered(true);
+    addHoveredId(conversation.id);
     
     // Cancel any pending collapse
     if (collapseTimeoutRef.current) {
       collapseTimeoutRef.current();
       collapseTimeoutRef.current = null;
     }
-  }, []);
+  }, [addHoveredId, conversation.id]);
 
   // Handle mouse leave - clear hover state only (no auto-collapse)
   const handleMouseLeave = useCallback(() => {
     setIsHovered(false);
-  }, []);
+    removeHoveredId(conversation.id);
+  }, [removeHoveredId, conversation.id]);
 
   // Handle action button clicks (archive/delete)
-  const handleDismiss = useCallback((type: 'archive' | 'delete') => {
+  const handleDismiss = useCallback(() => {
     dismissConversation(conversation.id);
-  }, [dismissConversation, conversation.id]);
+    removeHoveredId(conversation.id);
+  }, [dismissConversation, removeHoveredId, conversation.id]);
 
   // Handle composer actions (send/delete/attachments)
   const handleComposerAction = useCallback((
     type: ComposerActionType,
     conv: ConversationData | null
   ) => {
-    // TODO: Implement composer actions in Phase 4
-    console.log('Composer action:', type, conv?.id);
-  }, []);
+    if (!conv) {
+      return;
+    }
+
+    if (type === 'delete') {
+      setConversationMode(conv.id, 'read');
+      return;
+    }
+
+    if (type === 'send') {
+      markAsRead(conv.id);
+      setConversationMode(conv.id, 'read');
+      logger.info('Inline reply sent (placeholder).', { conversationId: conv.id });
+      return;
+    }
+
+    logger.info('Inline composer action not implemented.', { type, conversationId: conv.id });
+  }, [markAsRead, setConversationMode]);
 
   // Trigger bezel animation on expand
   const itemRef = useRef<HTMLElement>(null);
@@ -167,86 +190,90 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
     .join(' ');
 
   return (
-    <article
-      ref={itemRef}
-      className={classNames}
-      data-conversation-id={conversation.id}
-      onClick={handleClick}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      {/* Header */}
-      <div className="mail-bites-item-header">
-        <div className="mail-bites-header-main">
-          <span className="mail-bites-sender">
-            {conversation.sender || 'Unknown sender'}
-          </span>
-          <span className="mail-bites-subject">
-            {conversation.subject || '(No subject)'}
-          </span>
-        </div>
-        
-        <div className="mail-bites-header-right">
-          <span className="mail-bites-date">{conversation.date}</span>
+    <>
+      <article
+        ref={itemRef}
+        className={classNames}
+        data-conversation-id={conversation.id}
+        onClick={handleClick}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        {/* Header */}
+        <div className="mail-bites-item-header">
+          <div className="mail-bites-header-main">
+            <span className="mail-bites-sender">
+              {conversation.sender || 'Unknown sender'}
+            </span>
+            <span className="mail-bites-subject">
+              {conversation.subject || '(No subject)'}
+            </span>
+          </div>
           
-          {/* Action buttons (archive/delete) */}
-          <div className="mail-bites-actions">
-            <button
-              type="button"
-              className="mail-bites-action mail-bites-action-archive"
-              title="Archive"
-              aria-label="Archive"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDismiss('archive');
-              }}
-            >
-              <img
-                src={chrome.runtime.getURL('archive-button.svg')}
-                alt=""
-                decoding="async"
-                loading="lazy"
-              />
-            </button>
-            <button
-              type="button"
-              className="mail-bites-action mail-bites-action-delete"
-              title="Delete"
-              aria-label="Delete"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDismiss('delete');
-              }}
-            >
-              <img
-                src={chrome.runtime.getURL('delete-button.svg')}
-                alt=""
-                decoding="async"
-                loading="lazy"
-              />
-            </button>
+          <div className="mail-bites-header-right">
+            <span className="mail-bites-date">{conversation.date}</span>
+            
+            {/* Action buttons (archive/delete) */}
+            <div className="mail-bites-actions">
+              <button
+                type="button"
+                className="mail-bites-action mail-bites-action-archive"
+                title="Archive"
+                aria-label="Archive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDismiss();
+                }}
+              >
+                <img
+                  src={chrome.runtime.getURL('archive-button.svg')}
+                  alt=""
+                  decoding="async"
+                  loading="lazy"
+                />
+              </button>
+              <button
+                type="button"
+                className="mail-bites-action mail-bites-action-delete"
+                title="Delete"
+                aria-label="Delete"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDismiss();
+                }}
+              >
+                <img
+                  src={chrome.runtime.getURL('delete-button.svg')}
+                  alt=""
+                  decoding="async"
+                  loading="lazy"
+                />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Expanded details with reply/forward actions */}
-      <ConversationDetails
-        conversation={conversation}
-        isExpanded={isExpanded}
-        isCollapsing={isCollapsing}
-        mode={mode}
-      />
+        {/* Expanded details with reply/forward actions */}
+        <ConversationDetails
+          conversation={conversation}
+          isExpanded={isExpanded}
+          isCollapsing={isCollapsing}
+          mode={mode}
+        />
+      </article>
 
       {/* Composer box when in reply/forward mode */}
       {mode && (mode === 'reply' || mode === 'forward') && (
-        <ComposerBox
-          conversation={conversation}
-          mode={mode}
-          isExpanded={true}
-          onAction={handleComposerAction}
-        />
+        <div className="mail-bites-inline-composer">
+          <ComposerBox
+            conversation={conversation}
+            mode={mode}
+            isExpanded={true}
+            onAction={handleComposerAction}
+          />
+        </div>
       )}
-    </article>
+    </>
   );
 });
 

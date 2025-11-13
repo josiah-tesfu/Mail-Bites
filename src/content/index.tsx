@@ -6,10 +6,10 @@ import ComposerBox from './components/ComposerBox';
 import { Toolbar } from './components/Toolbar/Toolbar';
 import { ensureManropeFont } from './fontLoader';
 import { logger } from './logger';
+import { useGmailConversations } from './hooks/useGmailConversations';
 import { resetComposerStore, resetConversationStore, resetToolbarStore, useComposerStore, useConversationStore } from './store';
 import type { ComposerActionType } from './ui/types/actionTypes';
 import type { ConversationData } from './ui/conversationParser';
-import { MinimalInboxRenderer } from './ui/minimalInboxRenderer';
 import { GmailViewTracker, type ViewContext } from './viewTracker';
 
 const ROOT_ID = 'mail-bites-root';
@@ -27,8 +27,6 @@ let root: Root | null = null;
 let hostElement: HTMLElement | null = null;
 
 const MailBitesApp = ({ host }: { host: HTMLElement }) => {
-  const overlayRef = useRef<HTMLDivElement | null>(null);
-  const rendererRef = useRef<MinimalInboxRenderer | null>(null);
   const activeMainElementRef = useRef<HTMLElement | null>(null);
   const hasWarnedMissingMainRef = useRef(false);
   const mouseDownTargetRef = useRef<HTMLElement | null>(null);
@@ -41,10 +39,11 @@ const MailBitesApp = ({ host }: { host: HTMLElement }) => {
   const composeDrafts = useComposerStore((state) => state.composeDrafts);
   const expandedComposeIndex = useComposerStore((state) => state.expandedComposeIndex);
   const setExpandedComposeIndex = useComposerStore((state) => state.setExpandedComposeIndex);
+  const removeComposeBox = useComposerStore((state) => state.removeComposeBox);
+  const sendEmail = useComposerStore((state) => state.sendEmail);
+  const saveDraft = useComposerStore((state) => state.saveDraft);
 
-  if (!rendererRef.current) {
-    rendererRef.current = new MinimalInboxRenderer();
-  }
+  useGmailConversations(viewContext);
 
   useEffect(() => {
     ensureManropeFont();
@@ -91,9 +90,30 @@ const MailBitesApp = ({ host }: { host: HTMLElement }) => {
     conversation: ConversationData | null,
     composeIndex?: number
   ) => {
-    // TODO: Implement composer actions in Phase 4
-    logger.info('Standalone composer action:', type, composeIndex);
-  }, []);
+    if (composeIndex === undefined) {
+      logger.warn('Standalone composer action missing compose index', type);
+      return;
+    }
+
+    if (type === 'delete') {
+      const draft = composeDrafts.get(composeIndex);
+      if (draft) {
+        saveDraft(composeIndex, draft);
+      }
+      removeComposeBox(composeIndex);
+      logger.info('Draft closed and archived.', { composeIndex });
+      return;
+    }
+
+    if (type === 'send') {
+      sendEmail(composeIndex);
+      removeComposeBox(composeIndex, { archive: false });
+      logger.info('Draft marked as sent.', { composeIndex });
+      return;
+    }
+
+    logger.info('Standalone composer action not implemented:', type, composeIndex);
+  }, [composeDrafts, removeComposeBox, saveDraft, sendEmail]);
 
   // Handle compose box click to expand
   const handleComposeBoxClick = useCallback((index: number) => {
@@ -107,30 +127,28 @@ const MailBitesApp = ({ host }: { host: HTMLElement }) => {
   // Click-outside handler to collapse expanded conversations
   const handleClickOutside = useCallback((event: MouseEvent) => {
     const target = event.target as HTMLElement;
-    
-    // Don't collapse if clicking inside conversation item or composer
-    const mouseDownInItem = mouseDownTargetRef.current?.closest('.mail-bites-item');
-    const mouseDownInResponseBox = mouseDownTargetRef.current?.closest('.mail-bites-response-box');
-    
-    if (mouseDownInItem || mouseDownInResponseBox) {
+
+    const mouseDownInConversation = mouseDownTargetRef.current?.closest('.mail-bites-item');
+    const mouseDownInComposer = mouseDownTargetRef.current?.closest('.mail-bites-response-box');
+
+    if (mouseDownInConversation || mouseDownInComposer) {
       return;
     }
-    
-    const closestItem = target.closest('.mail-bites-item');
-    const closestResponseBox = target.closest('.mail-bites-response-box');
-    
-    if (closestItem || closestResponseBox) {
+
+    const clickedConversation = target.closest('.mail-bites-item');
+    const clickedComposer = target.closest('.mail-bites-response-box');
+
+    if (clickedConversation || clickedComposer) {
       return;
     }
-    
-    // Collapse expanded conversation if any
-    const expandedId = useConversationStore.getState().expandedId;
-    if (expandedId) {
-      logger.info('Collapsing conversation via click-outside', { expandedId });
-      useConversationStore.getState().collapseConversation(expandedId);
+
+    const conversationStore = useConversationStore.getState();
+    if (conversationStore.expandedId) {
+      logger.info('Collapsing conversation via click-outside', { expandedId: conversationStore.expandedId });
+      conversationStore.collapseConversation(conversationStore.expandedId);
+      conversationStore.setHighlightedId(null);
     }
-    
-    // Collapse expanded compose box if any
+
     if (expandedComposeIndex !== null) {
       logger.info('Collapsing compose box via click-outside', { expandedComposeIndex });
       setExpandedComposeIndex(null);
@@ -154,16 +172,7 @@ const MailBitesApp = ({ host }: { host: HTMLElement }) => {
   }, [isOverlayVisible, handleClickOutside]);
 
   useEffect(() => {
-    const overlayRoot = overlayRef.current;
-    const renderer = rendererRef.current;
-
-    if (!overlayRoot || !renderer) {
-      return;
-    }
-
     if (!viewContext || !viewContext.mainElement) {
-      renderer.reset();
-      overlayRoot.innerHTML = '';
       activeMainElementRef.current = null;
       resetConversationStore();
       resetToolbarStore();
@@ -178,40 +187,26 @@ const MailBitesApp = ({ host }: { host: HTMLElement }) => {
       resetConversationStore();
       resetToolbarStore();
       resetComposerStore();
-      renderer.reset();
-      overlayRoot.innerHTML = '';
-    }
-
-    if (!previousMain && mainElement) {
-      resetConversationStore();
-      resetToolbarStore();
-      resetComposerStore();
     }
 
     activeMainElementRef.current = currentMain;
-
-    overlayRoot.innerHTML = '';
-    renderer.render(viewContext, overlayRoot);
   }, [mainElement, viewContext]);
 
   useEffect(() => {
     return () => {
-      const overlayRoot = overlayRef.current;
-      rendererRef.current?.reset();
       resetConversationStore();
       resetToolbarStore();
       resetComposerStore();
-
-      if (overlayRoot) {
-        overlayRoot.innerHTML = '';
-      }
-
       host.style.display = 'none';
     };
   }, [host]);
 
   return (
-    <>
+    <div
+      className="mail-bites-overlay"
+      data-mail-bites="overlay"
+      aria-hidden={!isOverlayVisible}
+    >
       {isOverlayVisible && (
         <>
           <Toolbar />
@@ -242,13 +237,7 @@ const MailBitesApp = ({ host }: { host: HTMLElement }) => {
           />
         </>
       )}
-      <div
-        ref={overlayRef}
-        className="mail-bites-overlay"
-        data-mail-bites="overlay"
-        aria-hidden={!isOverlayVisible}
-      />
-    </>
+    </div>
   );
 };
 

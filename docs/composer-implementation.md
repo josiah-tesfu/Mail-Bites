@@ -66,7 +66,7 @@ Implemented the `ComposerBox` React component as part of Phase 4 of the React mi
 
 ### Legacy Reference
 
-**Source:** `/src/content/ui/builders/ResponseBoxBuilder.ts`
+**Source:** `/src/content/ui/builders/ComposerBox builder (legacy).ts`
 
 All methods from the legacy builder were migrated:
 - `build()` → Component render logic

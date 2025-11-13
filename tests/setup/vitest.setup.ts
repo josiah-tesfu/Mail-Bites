@@ -59,4 +59,11 @@ if (!globalThis.chrome) {
 declare global {
   // eslint-disable-next-line no-var
   var chrome: typeof globalThis.chrome;
+  // Flag consumed by React 18 to silence act() environment warnings.
+  // eslint-disable-next-line no-var
+  var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
+}
+
+if (typeof globalThis.IS_REACT_ACT_ENVIRONMENT === 'undefined') {
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 }

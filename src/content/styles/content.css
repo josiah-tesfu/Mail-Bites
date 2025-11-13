@@ -188,6 +188,15 @@
   animation: mail-bites-expanded-icon-appear 0.25s ease-out forwards;
 }
 
+.mail-bites-inline-composer {
+  width: 100%;
+  margin: 0;
+}
+
+.mail-bites-inline-composer .mail-bites-response-box {
+  margin: 12px 0 24px;
+}
+
 @keyframes mail-bites-search-appear {
   0% {
     width: 0;

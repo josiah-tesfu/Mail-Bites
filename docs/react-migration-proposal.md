@@ -290,7 +290,7 @@ const useAnimations = () => {
 5. Add `React.memo` to prevent unnecessary re-renders
 
 ### Phase 4: Composer (Week 4)
-1. Convert `ResponseBoxBuilder` → `ComposerBox`
+1. Convert `ComposerBox builder (legacy)` → `ComposerBox`
 2. Build `ComposerField`, `ComposerActions`, `CollapsedDraft`
 3. Wire up `useComposerStore` for multi-box state
 4. Implement draft persistence + empty-draft validation

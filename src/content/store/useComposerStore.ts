@@ -8,15 +8,20 @@ interface ComposerState {
   composeDrafts: Map<number, DraftData>;
   sentEmails: Set<number>;
   isComposingAnimating: boolean;
+  isComposing: boolean;
+  archivedDrafts: DraftData[];
 }
 
 interface ComposerActions {
   addComposeBox: () => number;
-  removeComposeBox: (index: number) => void;
+  removeComposeBox: (index: number, options?: { archive?: boolean }) => void;
   setExpandedComposeIndex: (index: number | null) => void;
   saveDraft: (index: number, draft: DraftData) => void;
   sendEmail: (index: number) => void;
   setComposeAnimationState: (isAnimating: boolean) => void;
+  setIsComposing: (value: boolean) => void;
+  addArchivedDraft: (draft: DraftData) => void;
+  clearArchivedDrafts: () => void;
   reset: () => void;
 }
 
@@ -36,7 +41,9 @@ const createInitialState = (): ComposerState => ({
   expandedComposeIndex: null,
   composeDrafts: new Map<number, DraftData>(),
   sentEmails: new Set<number>(),
-  isComposingAnimating: false
+  isComposingAnimating: false,
+  isComposing: false,
+  archivedDrafts: []
 });
 
 export const useComposerStore = create<ComposerStore>((set, get) => ({
@@ -59,18 +66,20 @@ export const useComposerStore = create<ComposerStore>((set, get) => ({
         composeDrafts,
         sentEmails,
         expandedComposeIndex: nextIndex,
-        isComposingAnimating: true
+        isComposingAnimating: true,
+        isComposing: true
       };
     });
 
     return nextIndex;
   },
-  removeComposeBox: (index) => {
+  removeComposeBox: (index, options) => {
     set((state) => {
       if (index < 0 || index >= state.composeBoxCount) {
         return state;
       }
 
+      const removedDraft = state.composeDrafts.get(index);
       const composeDrafts = new Map<number, DraftData>();
       const sentEmails = new Set<number>();
       let nextPosition = 0;
@@ -104,11 +113,18 @@ export const useComposerStore = create<ComposerStore>((set, get) => ({
         expandedComposeIndex = currentExpanded - 1;
       }
 
+      const archivedDrafts =
+        removedDraft && options?.archive !== false
+          ? [...state.archivedDrafts, removedDraft]
+          : state.archivedDrafts;
+
       return {
         composeBoxCount,
         composeDrafts,
         sentEmails,
-        expandedComposeIndex
+        expandedComposeIndex,
+        isComposing: composeBoxCount > 0,
+        archivedDrafts
       };
     });
   },
@@ -132,7 +148,11 @@ export const useComposerStore = create<ComposerStore>((set, get) => ({
       }
 
       const composeDrafts = new Map(state.composeDrafts);
-      composeDrafts.set(index, { ...draft });
+      composeDrafts.set(index, {
+        ...draft,
+        isDirty: false,
+        timestamp: Date.now()
+      });
 
       return { composeDrafts };
     });
@@ -164,6 +184,17 @@ export const useComposerStore = create<ComposerStore>((set, get) => ({
   },
   setComposeAnimationState: (isAnimating) => {
     set({ isComposingAnimating: isAnimating });
+  },
+  setIsComposing: (value) => {
+    set({ isComposing: value });
+  },
+  addArchivedDraft: (draft) => {
+    set((state) => ({
+      archivedDrafts: [...state.archivedDrafts, { ...draft }]
+    }));
+  },
+  clearArchivedDrafts: () => {
+    set({ archivedDrafts: [] });
   },
   reset: () => {
     set(() => ({

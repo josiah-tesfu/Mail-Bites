@@ -54,8 +54,12 @@ describe('useConversationStore', () => {
   });
 
   it('dismisses conversations and manages modes', () => {
-    const { setConversations, dismissConversation, setConversationMode } =
-      useConversationStore.getState();
+    const {
+      setConversations,
+      dismissConversation,
+      finalizeDismiss,
+      setConversationMode
+    } = useConversationStore.getState();
 
     setConversations(sampleConversations);
     setConversationMode('thread-1', 'reply');
@@ -66,6 +70,14 @@ describe('useConversationStore', () => {
 
     dismissConversation('thread-1');
 
+    expect(useConversationStore.getState().fadingOutIds.has('thread-1')).toBe(
+      true
+    );
+    expect(useConversationStore.getState().dismissedIds.has('thread-1')).toBe(
+      false
+    );
+
+    finalizeDismiss('thread-1');
     expect(useConversationStore.getState().dismissedIds.has('thread-1')).toBe(
       true
     );
@@ -160,6 +172,7 @@ describe('useComposerStore', () => {
     expect(useComposerStore.getState().composeBoxCount).toBe(1);
     expect(useComposerStore.getState().expandedComposeIndex).toBe(0);
     expect(useComposerStore.getState().isComposingAnimating).toBe(true);
+    expect(useComposerStore.getState().isComposing).toBe(true);
 
     setComposeAnimationState(false);
     expect(useComposerStore.getState().isComposingAnimating).toBe(false);
@@ -173,6 +186,7 @@ describe('useComposerStore', () => {
     expect(useComposerStore.getState().composeDrafts.get(0)?.subject).toBe(
       'Subject'
     );
+    expect(useComposerStore.getState().composeDrafts.get(0)?.isDirty).toBe(false);
 
     sendEmail(0);
     expect(useComposerStore.getState().sentEmails.has(0)).toBe(true);
@@ -186,7 +200,9 @@ describe('useComposerStore', () => {
       addComposeBox,
       saveDraft,
       removeComposeBox,
-      setExpandedComposeIndex
+      setExpandedComposeIndex,
+      addArchivedDraft,
+      clearArchivedDrafts
     } = useComposerStore.getState();
 
     addComposeBox();
@@ -202,5 +218,21 @@ describe('useComposerStore', () => {
       'Second'
     );
     expect(useComposerStore.getState().expandedComposeIndex).toBe(0);
+
+    removeComposeBox(0);
+    expect(useComposerStore.getState().composeBoxCount).toBe(0);
+    expect(useComposerStore.getState().isComposing).toBe(false);
+    expect(useComposerStore.getState().archivedDrafts).toHaveLength(2);
+
+    clearArchivedDrafts();
+    expect(useComposerStore.getState().archivedDrafts).toHaveLength(0);
+
+    addComposeBox();
+    saveDraft(0, sampleDraft());
+    removeComposeBox(0, { archive: false });
+    expect(useComposerStore.getState().archivedDrafts).toHaveLength(0);
+
+    addArchivedDraft(sampleDraft());
+    expect(useComposerStore.getState().archivedDrafts).toHaveLength(1);
   });
 });

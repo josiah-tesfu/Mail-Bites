@@ -27,6 +27,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
   mode
 }) => {
   const setConversationMode = useConversationStore((state) => state.setConversationMode);
+  const markAsRead = useConversationStore((state) => state.markAsRead);
   const [isVisible, setIsVisible] = useState(false);
   const [shouldMount, setShouldMount] = useState(isExpanded);
   const detailsRef = useRef<HTMLDivElement>(null);

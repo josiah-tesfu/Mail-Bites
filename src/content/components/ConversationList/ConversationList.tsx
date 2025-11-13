@@ -34,6 +34,8 @@ const ConversationList: React.FC<ConversationListProps> = ({ composeBoxes }) => 
 
   // Active filter is the first button in the order
   const activeFilter = filterButtonOrder[0];
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const hasSearchQuery = normalizedQuery.length > 0;
 
   // Filter conversations
   const filteredConversations = useMemo(() => {
@@ -42,33 +44,29 @@ const ConversationList: React.FC<ConversationListProps> = ({ composeBoxes }) => 
     // Filter out dismissed conversations (but keep fading out ones visible)
     filtered = filtered.filter((conv) => !dismissedIds.has(conv.id));
 
-    // Apply search query filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+    if (normalizedQuery) {
       filtered = filtered.filter((conv) => {
+        const sender = conv.sender.toLowerCase();
+        const subject = conv.subject.toLowerCase();
+        const snippet = conv.snippet.toLowerCase();
         return (
-          conv.sender.toLowerCase().includes(query) ||
-          conv.subject.toLowerCase().includes(query) ||
-          conv.snippet.toLowerCase().includes(query)
+          sender.includes(normalizedQuery) ||
+          subject.includes(normalizedQuery) ||
+          snippet.includes(normalizedQuery)
         );
       });
     }
 
-    // Apply filter type (unread/read/draft)
-    // Note: Legacy code filters in render() based on isUnread and readIds
-    // For now, we keep it simple based on conversation.isUnread state
     if (activeFilter === 'unread') {
       filtered = filtered.filter((conv) => conv.isUnread);
     } else if (activeFilter === 'read') {
       filtered = filtered.filter((conv) => !conv.isUnread);
     } else if (activeFilter === 'draft') {
-      // Draft filtering logic - currently no draft conversations exist
-      // This is a placeholder for future implementation
       filtered = [];
     }
 
     return filtered;
-  }, [conversations, dismissedIds, searchQuery, activeFilter]);
+  }, [conversations, dismissedIds, normalizedQuery, activeFilter]);
 
   return (
     <div
@@ -89,9 +87,11 @@ const ConversationList: React.FC<ConversationListProps> = ({ composeBoxes }) => 
             fontSize: '14px'
           }}
         >
-          {searchQuery.trim() 
+          {hasSearchQuery
             ? 'No conversations match your search.'
-            : 'No conversations to display.'}
+            : activeFilter === 'draft'
+              ? 'No drafts to display.'
+              : 'No conversations match this filter.'}
         </div>
       ) : (
         filteredConversations.map((conversation) => (

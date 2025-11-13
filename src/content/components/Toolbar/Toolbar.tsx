@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import { useAnimations } from '../../hooks/useAnimations';
 import { useComposerStore } from '../../store/useComposerStore';
@@ -15,6 +15,8 @@ export const Toolbar = () => {
   const addComposeBox = useComposerStore((state) => state.addComposeBox);
   const isComposingAnimating = useComposerStore((state) => state.isComposingAnimating);
   const setComposeAnimationState = useComposerStore((state) => state.setComposeAnimationState);
+  const expandedComposeIndex = useComposerStore((state) => state.expandedComposeIndex);
+  const composeDrafts = useComposerStore((state) => state.composeDrafts);
   
   const [isNewEmailAnimating, setIsNewEmailAnimating] = useState(false);
   const [isSearchAnimating, setIsSearchAnimating] = useState(false);
@@ -23,8 +25,46 @@ export const Toolbar = () => {
   
   const { animateComposeRotation, animateSearchTransform } = useAnimations();
 
+  const isExpandedDraftEmpty = useCallback(() => {
+    if (expandedComposeIndex === null || expandedComposeIndex < 0) {
+      return false;
+    }
+
+    const draft = composeDrafts.get(expandedComposeIndex);
+    if (!draft) {
+      return true;
+    }
+
+    const recipient = draft.to?.trim() ?? '';
+    const subject = draft.subject?.trim() ?? '';
+    const body = draft.body?.trim() ?? '';
+    return recipient === '' && subject === '' && body === '';
+  }, [expandedComposeIndex, composeDrafts]);
+
+  const pulseComposeBox = useCallback((index: number) => {
+    const composeElement = document.querySelector<HTMLElement>(
+      `.mail-bites-response-box[data-compose-index="${index}"]`
+    );
+    if (!composeElement) {
+      return;
+    }
+
+    composeElement.classList.remove('mail-bites-anim-bezel-surface');
+    void composeElement.offsetWidth;
+    composeElement.classList.add('mail-bites-anim-bezel-surface');
+  }, []);
+
   const handleNewEmailClick = () => {
     if (isNewEmailAnimating || isComposingAnimating) return;
+
+    if (
+      expandedComposeIndex !== null &&
+      expandedComposeIndex >= 0 &&
+      isExpandedDraftEmpty()
+    ) {
+      pulseComposeBox(expandedComposeIndex);
+      return;
+    }
 
     setIsNewEmailAnimating(true);
     setComposeAnimationState(true);
@@ -35,6 +75,9 @@ export const Toolbar = () => {
         setIsNewEmailAnimating(false);
         setComposeAnimationState(false);
       });
+    } else {
+      setIsNewEmailAnimating(false);
+      setComposeAnimationState(false);
     }
 
     addComposeBox();
