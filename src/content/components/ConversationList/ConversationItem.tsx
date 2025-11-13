@@ -42,6 +42,7 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
   const markAsRead = useConversationStore((state) => state.markAsRead);
   const addHoveredId = useConversationStore((state) => state.addHoveredId);
   const removeHoveredId = useConversationStore((state) => state.removeHoveredId);
+  const clearCollapseState = useConversationStore((state) => state.clearCollapseState);
 
   // Local state
   const [isHovered, setIsHovered] = useState(false);
@@ -115,20 +116,8 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
   const itemRef = useRef<HTMLElement>(null);
   
   useEffect(() => {
-    if (isExpanded && itemRef.current && mode === 'read') {
-      const item = itemRef.current;
-      item.classList.remove('mail-bites-anim-bezel');
-      void item.offsetWidth; // Force reflow
-      item.classList.add('mail-bites-anim-bezel');
-      
-      const handleAnimationEnd = () => {
-        item.classList.remove('mail-bites-anim-bezel');
-      };
-      
-      item.addEventListener('animationend', handleAnimationEnd, { once: true });
-      return () => {
-        item.removeEventListener('animationend', handleAnimationEnd);
-      };
+    if (collapseTimeoutRef.current) {
+      collapseTimeoutRef.current();
     }
   }, [isExpanded, mode]);
 
@@ -167,6 +156,40 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
     }
   }, [isFadingOut, finalizeDismiss, conversation.id]);
 
+  useEffect(() => {
+    if (!isCollapsing) {
+      return;
+    }
+
+    let cancelled = false;
+    let completed = false;
+
+    const finishCollapse = () => {
+      if (cancelled || completed) {
+        return;
+      }
+      completed = true;
+      if (useConversationStore.getState().collapsingId === conversation.id) {
+        clearCollapseState();
+      }
+    };
+
+    const item = itemRef.current;
+    let cleanupAnimation: (() => void) | null = null;
+
+    const cancelTimeout = scheduleCollapseTimeout(() => {
+      finishCollapse();
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      cancelTimeout();
+      if (cleanupAnimation) {
+        cleanupAnimation();
+      }
+    };
+  }, [isCollapsing, conversation.id, scheduleCollapseTimeout, clearCollapseState, mode]);
+
   // Cleanup collapse timeout on unmount
   useEffect(() => {
     return () => {
@@ -176,14 +199,19 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
     };
   }, []);
 
+  const showExpandedStyles = isExpanded || isCollapsing;
+  const forceHoverState = isCollapsing && (isHovered || isHighlighted);
+  const effectiveHovered = isHovered || forceHoverState;
+  const effectiveHighlighted = isHighlighted || forceHoverState;
+
   // Build CSS class names
   const classNames = [
     'mail-bites-item',
-    isExpanded && 'is-expanded',
+    showExpandedStyles && 'is-expanded',
     isCollapsing && 'is-collapsing',
-    isHovered && 'is-hovered',
-    isHighlighted && 'is-active',
-    isExpanded && mode !== 'read' && 'is-composer-active',
+    effectiveHovered && 'is-hovered',
+    effectiveHighlighted && 'is-active',
+    showExpandedStyles && mode !== 'read' && 'is-composer-active',
     isFadingOut && 'is-fading-out'
   ]
     .filter(Boolean)

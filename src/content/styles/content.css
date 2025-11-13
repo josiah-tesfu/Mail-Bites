@@ -288,17 +288,7 @@
   transform: translateY(-3px) scale(1.01);
 }
 
-/* collapsing state - smooth quick transition to scale 1.0 and translate 0 */
-/* Use !important to override :hover pseudo-class */
-.mail-bites-item.is-collapsing {
-  transform: translateY(0) scale(1.0) !important;
-  transition: background-color 0.22s cubic-bezier(0.33, 1, 0.68, 1),
-    border-radius 0.22s cubic-bezier(0.33, 1, 0.68, 1),
-    box-shadow 0.22s cubic-bezier(0.33, 1, 0.68, 1),
-    opacity 0.2s ease,
-    transform 0.25s ease-out !important; /* Quick smooth scale and translate transition */
-}
-
+/* collapsing state - keep bezel animation in control */
 .mail-bites-item.is-composer-active {
   border-color: rgba(0, 0, 0, 0.45);
   color: rgba(17, 17, 17, 0.6);
@@ -330,9 +320,13 @@
 /* reveal actions when interactive */
 .mail-bites-item.is-hovered .mail-bites-actions,
 .mail-bites-item.is-active .mail-bites-actions,
-.mail-bites-item:hover .mail-bites-actions {
+.mail-bites-item:hover .mail-bites-actions,
+.mail-bites-item.is-collapsing .mail-bites-actions {
   opacity: 1;
   pointer-events: auto;
+}
+.mail-bites-item.is-collapsing .mail-bites-actions button {
+  pointer-events: none;
 }
 
 /* === Header Layout === */
