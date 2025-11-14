@@ -148,6 +148,17 @@ describe('useToolbarStore', () => {
       'draft'
     ]);
   });
+
+  it('sets primary filter and collapse state explicitly', () => {
+    const { setPrimaryFilter, setFilterCollapsed } = useToolbarStore.getState();
+
+    setPrimaryFilter('draft', { collapse: true });
+    expect(useToolbarStore.getState().filterButtonOrder[0]).toBe('draft');
+    expect(useToolbarStore.getState().isFilterCollapsed).toBe(true);
+
+    setFilterCollapsed(false);
+    expect(useToolbarStore.getState().isFilterCollapsed).toBe(false);
+  });
 });
 
 describe('useComposerStore', () => {

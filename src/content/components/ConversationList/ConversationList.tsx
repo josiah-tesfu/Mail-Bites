@@ -68,6 +68,10 @@ const ConversationList: React.FC<ConversationListProps> = ({ composeBoxes }) => 
     return filtered;
   }, [conversations, dismissedIds, normalizedQuery, activeFilter]);
 
+  const shouldRenderComposeBoxes = activeFilter === 'draft' ? composeBoxes : undefined;
+  const hasComposeBoxes = Boolean(shouldRenderComposeBoxes);
+  const shouldShowEmptyState = filteredConversations.length === 0 && !(activeFilter === 'draft' && hasComposeBoxes);
+
   return (
     <div
       ref={containerRef}
@@ -75,9 +79,9 @@ const ConversationList: React.FC<ConversationListProps> = ({ composeBoxes }) => 
       data-highlight-id={highlightedId || undefined}
     >
       {/* Standalone compose boxes render at top of list */}
-      {composeBoxes}
+      {shouldRenderComposeBoxes}
       
-      {filteredConversations.length === 0 ? (
+      {shouldShowEmptyState ? (
         <div
           className="mail-bites-empty-state"
           style={{

@@ -15,6 +15,8 @@ interface ToolbarActions {
   rotateFilterButtons: (clickedType: ToolbarFilterType) => void;
   toggleFilterCollapse: () => void;
   setFilterOrder: (order: ToolbarFilterType[]) => void;
+  setFilterCollapsed: (collapsed: boolean) => void;
+  setPrimaryFilter: (filter: ToolbarFilterType, options?: { collapse?: boolean }) => void;
   reset: () => void;
 }
 
@@ -75,6 +77,19 @@ export const useToolbarStore = create<ToolbarStore>((set) => ({
     );
     set({
       filterButtonOrder: completeOrder.slice(0, defaultOrder.length)
+    });
+  },
+  setFilterCollapsed: (collapsed) => {
+    set({ isFilterCollapsed: collapsed });
+  },
+  setPrimaryFilter: (filter, options) => {
+    set((state) => {
+      const filtered = state.filterButtonOrder.filter((entry) => entry !== filter);
+      const nextOrder: ToolbarFilterType[] = [filter, ...filtered];
+      return {
+        filterButtonOrder: nextOrder,
+        isFilterCollapsed: options?.collapse ?? state.isFilterCollapsed
+      };
     });
   },
   reset: () => {

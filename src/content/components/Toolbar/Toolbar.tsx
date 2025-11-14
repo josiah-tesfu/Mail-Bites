@@ -10,6 +10,8 @@ import { FilterButtons } from './FilterButtons';
 export const Toolbar = () => {
   const isSearchActive = useToolbarStore((state) => state.isSearchActive);
   const toggleSearch = useToolbarStore((state) => state.toggleSearch);
+  const setSearchQuery = useToolbarStore((state) => state.setSearchQuery);
+  const setPrimaryFilter = useToolbarStore((state) => state.setPrimaryFilter);
   
   const addComposeBox = useComposerStore((state) => state.addComposeBox);
   const isComposingAnimating = useComposerStore((state) => state.isComposingAnimating);
@@ -80,6 +82,12 @@ export const Toolbar = () => {
     }
 
     addComposeBox();
+    setPrimaryFilter('draft', { collapse: true });
+
+    if (isSearchActive) {
+      toggleSearch();
+    }
+    setSearchQuery('');
   };
 
   const handleSearchClick = () => {

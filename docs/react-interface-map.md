@@ -35,7 +35,7 @@ This document provides a detailed tabular breakdown of all React components, the
 | **Custom Hooks** | • `useAnimations()` - For compose button rotation |
 | **Local State** | • `isNewEmailAnimating: boolean` - Transient animation state for new email button |
 | **Child Components** | • `<ToolbarButton type="new-email" />`<br>• `<ToolbarButton type="search" />` → `<SearchInput />`<br>• `<FilterButtons />` |
-| **Event Handlers** | • `handleNewEmailClick()` → calls `addComposeBox()` + animation |
+| **Event Handlers** | • `handleNewEmailClick()` → calls `addComposeBox()`, auto-switches filter to `draft`, and collapses search if active |
 | **Notes** | • Gradient overlay at z-index: 2147483647<br>• Sticky positioning at top of overlay |
 
 ---
@@ -102,7 +102,7 @@ This document provides a detailed tabular breakdown of all React components, the
 | **Local State** | • `containerRef: RefObject<HTMLDivElement>` - For scroll restoration |
 | **Child Components** | • `<ConversationItem />` (rendered for each filtered conversation) |
 | **Event Handlers** | None (passive container) |
-| **Notes** | • Filters conversations based on `searchQuery` + active filter<br>• Uses `React.memo` on children to prevent re-renders<br>• Virtualization deferred (react-window) |
+| **Notes** | • Filters conversations based on `searchQuery` + active filter<br>• Renders standalone compose boxes only when the `draft` filter is active<br>• Uses `React.memo` on children to prevent re-renders<br>• Virtualization deferred (react-window) |
 
 ---
 
