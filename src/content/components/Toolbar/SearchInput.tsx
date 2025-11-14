@@ -1,19 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useToolbarStore } from '../../store/useToolbarStore';
 
 interface SearchInputProps {
   onSearchClose: () => void;
-  onSearchQueryChange: (query: string) => void;
 }
 
 export const SearchInput: React.FC<SearchInputProps> = ({
-  onSearchClose,
-  onSearchQueryChange
+  onSearchClose
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
-  const debounceTimerRef = useRef<number | null>(null);
-  const { searchQuery, setSearchQuery } = useToolbarStore();
-  const [value, setValue] = useState(searchQuery);
+  const searchQuery = useToolbarStore((state) => state.searchQuery);
+  const setSearchQuery = useToolbarStore((state) => state.setSearchQuery);
 
   // Auto-focus on mount
   useEffect(() => {
@@ -24,32 +21,13 @@ export const SearchInput: React.FC<SearchInputProps> = ({
     }
   }, []);
 
-  // Clean up debounce timer on unmount
-  useEffect(() => {
-    return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-    };
-  }, []);
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    setValue(newValue);
     setSearchQuery(newValue);
-
-    // Debounce the callback
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-
-    debounceTimerRef.current = window.setTimeout(() => {
-      onSearchQueryChange(newValue);
-    }, 300);
   };
 
   const handleBlur = () => {
-    if (!value.trim()) {
+    if (!searchQuery.trim()) {
       onSearchClose();
     }
   };
@@ -65,9 +43,9 @@ export const SearchInput: React.FC<SearchInputProps> = ({
       <input
         ref={inputRef}
         type="text"
-        className="mail-bites-search-input"
-        placeholder=""
-        value={value}
+      className="mail-bites-search-input"
+      placeholder=""
+      value={searchQuery}
         onChange={handleChange}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}

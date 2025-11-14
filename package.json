@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "node scripts/build.js",
-    "build:watch": "node scripts/build.js --watch",
+    "build": "vite build",
+    "build:watch": "vite build --watch",
     "test": "npm run test:unit",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest watch",

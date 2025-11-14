@@ -1,23 +1,36 @@
-1. **Disconnect Legacy DOM Renderer**  
-   Retire `MinimalInboxRenderer`’s DOM-building responsibilities (`src/content/ui/minimalInboxRenderer.ts`). Replace Gmail-row parsing plus UIState mutations with a thin data-harvesting layer (likely a hook) that only feeds normalized data into the shared Zustand stores. Remove or quarantine unused modules in `src/content/ui/builders` once React owns rendering.
+## React Migration Completion Plan
 
-2. **Unify State Management**  
-   Choose Zustand as the single source of truth. Port any remaining `UIState` fields (click-outside flags, compose animation state, etc.) into `useConversationStore`, `useToolbarStore`, or `useComposerStore`, then delete `UIState.ts`. Update all consumers and utilities to read/write exclusively through the stores.
+### 1. Gmail Data Flow & Rendering
+- Emit view updates on DOM mutations in `GmailViewTracker` so `useGmailConversations` can refresh when Gmail changes without navigation.
+- Replace the current fire-once hook with the planned throttled `useConversations` observer that watches `div[role="main"]` and feeds Zustand incrementally.
+- Guard store resets so navigation doesn’t purge state (especially compose drafts) unless Gmail’s main container truly changes.
 
-3. **Reimplement Event Handling in React**  
-   Move conversation hover, expand/collapse, dismiss, and click-outside handling from `EventCoordinator.ts` into React components/hooks (e.g., `ConversationItem`, `MailBitesApp`). Remove the additional listeners once React-driven handlers cover every scenario to avoid conflicting state updates.
+### 2. UI Hooks & Interaction Parity
+- Extract the documented `useClickOutside` helper and wire it into the root overlay instead of manual event bookkeeping.
+- Finish the toolbar/search story: remove the stale TODO and ensure search state flows strictly through `useToolbarStore`.
+- Reconcile planned composer behavior with code: standalone drafts should remain inline at the top of the conversation list (current behavior is correct) and documentation must reflect that.
 
-4. **Finish Toolbar & Filtering**  
-   Wire toolbar buttons to real filtering logic by ensuring `ConversationList` receives both unread and read conversations from the store. Remove the unread-only gating in `MinimalInboxRenderer.render()`, honor the toolbar’s filter order, and keep search debounced across the full list.
+### 3. Conversation & Composer Actions
+- Replace archive/delete placeholders with real Gmail integrations (or clear stubs plus tracked issues) so actions affect the mailbox.
+- Flesh out inline composer send/delete flows, updating conversation state (read status, dismissals) in tandem with Gmail.
+- Persist standalone compose drafts (local storage or chrome.storage) so reloads/navigation don’t drop user work.
 
-5. **Complete Composer Functionality**  
-   Implement the composer action handlers: `handleStandaloneComposerAction` inside `MailBitesApp`, plus per-conversation composer actions in `ConversationItem`. Actions should persist drafts through `useComposerStore`, update conversation modes, remove compose boxes on delete/send, and drop reliance on `ComposerBox builder (legacy)`.
+### 4. Styling & Assets Cleanup
+- Fix the malformed `mail-bites-rotate-open` keyframe in `src/content/styles/animations.css` (extra braces currently break the animation).
+- Remove the unused legacy builders/animation controller (`src/content/ui/**/*Builder.ts`, `AnimationController.ts`, `content.css`, etc.) and stop referencing them in `dependencies.md`.
+- Stop copying orphaned assets (e.g., `assets/templates/composer-divider.html`) if the React components never load them.
 
-6. **Modernize Gmail Data Refresh**  
-   Extract the DOM parsing in `conversationParser.ts` into a dedicated Gmail-sync service or hook invoked from the tracker effect. Keep `GmailViewTracker` focused on notifying when Gmail changes, while the new layer updates Zustand without going through `MinimalInboxRenderer.render()`.
+### 5. Documentation Reliability
+- Rebuild empty or stale docs (`docs/architecture.md`, `docs/project_roadmap.md`, `docs/updates.md`) so newcomers can trust the plan.
+- Clean `docs/react-interface-map.md` (remove the stray external PDF link) and update sections that still describe unimplemented hooks/components.
+- Refresh composer docs (`docs/composer-implementation.md`) to note the inline-at-top layout as the intended design.
+- Audit `dependencies.md` to match the React codebase (drop `minimalInboxRenderer`, legacy builders, etc.).
 
-7. **Cleanup & Tests**  
-   Delete unused legacy files (`EventCoordinator.ts`, builder classes, redundant CSS selectors) once parity is confirmed. Add Vitest coverage for store transitions, toolbar filtering, and composer behaviors, plus optional Playwright smoke tests to ensure the overlay reacts correctly to mocked Gmail DOM changes.
+### 6. Build & Tooling
+- Adopt the Vite build so bundles ship minified with the correct React env flags (esbuild helper removed).
+- Ensure Dev/Prod parity: document how to run a fast-refresh dev server and how to ship the optimized extension bundle.
 
-8. **Documentation & Styles**  
-   Update README/docs to describe the React architecture, including how Gmail data flows into Zustand and how to add new UI features. Audit `src/content/styles` to remove selectors aimed at the legacy DOM and ensure build tooling copies only the styles and assets required by the React implementation.
+### 7. Testing & Quality Gates
+- Add the missing unit coverage for `navigation.ts`, `viewTracker.ts`, `useAnimations`, and at least the React components that hold core logic (Toolbar, ConversationItem, ComposerBox).
+- Stand up the Playwright suite described in `tests/integration/README.md`, covering bootstrap + inbox interactions.
+- Update `docs/testing.md` once the above tests exist so guidance matches reality.

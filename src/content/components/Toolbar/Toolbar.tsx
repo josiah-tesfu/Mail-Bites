@@ -10,7 +10,6 @@ import { FilterButtons } from './FilterButtons';
 export const Toolbar = () => {
   const isSearchActive = useToolbarStore((state) => state.isSearchActive);
   const toggleSearch = useToolbarStore((state) => state.toggleSearch);
-  const setSearchQuery = useToolbarStore((state) => state.setSearchQuery);
   
   const addComposeBox = useComposerStore((state) => state.addComposeBox);
   const isComposingAnimating = useComposerStore((state) => state.isComposingAnimating);
@@ -111,11 +110,6 @@ export const Toolbar = () => {
     toggleSearch();
   };
 
-  const handleSearchQueryChange = (query: string) => {
-    setSearchQuery(query);
-    // TODO: Trigger conversation filtering
-  };
-
   return (
     <div className="mail-bites-toolbar">
       <ToolbarButton
@@ -128,7 +122,6 @@ export const Toolbar = () => {
       {isSearchActive ? (
         <SearchInput
           onSearchClose={handleSearchClose}
-          onSearchQueryChange={handleSearchQueryChange}
         />
       ) : (
         <ToolbarButton

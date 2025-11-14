@@ -7,6 +7,8 @@ import { Toolbar } from './components/Toolbar/Toolbar';
 import { ensureManropeFont } from './fontLoader';
 import { logger } from './logger';
 import { useGmailConversations } from './hooks/useGmailConversations';
+import { useMainElementReset } from './hooks/useMainElementReset';
+import { useClickOutside } from './hooks/useClickOutside';
 import { resetComposerStore, resetConversationStore, resetToolbarStore, useComposerStore, useConversationStore } from './store';
 import type { ComposerActionType } from './ui/types/actionTypes';
 import type { ConversationData } from './ui/conversationParser';
@@ -27,11 +29,9 @@ let root: Root | null = null;
 let hostElement: HTMLElement | null = null;
 
 const MailBitesApp = ({ host }: { host: HTMLElement }) => {
-  const activeMainElementRef = useRef<HTMLElement | null>(null);
   const hasWarnedMissingMainRef = useRef(false);
-  const mouseDownTargetRef = useRef<HTMLElement | null>(null);
+  const overlayRef = useRef<HTMLDivElement | null>(null);
   const [viewContext, setViewContext] = useState<ViewContext | null>(null);
-  const [mainElement, setMainElement] = useState<HTMLElement | null>(null);
   const [isOverlayVisible, setOverlayVisible] = useState(false);
 
   // Store subscriptions for standalone compose boxes
@@ -44,6 +44,7 @@ const MailBitesApp = ({ host }: { host: HTMLElement }) => {
   const saveDraft = useComposerStore((state) => state.saveDraft);
 
   useGmailConversations(viewContext);
+  useMainElementReset(viewContext);
 
   useEffect(() => {
     ensureManropeFont();
@@ -52,7 +53,6 @@ const MailBitesApp = ({ host }: { host: HTMLElement }) => {
   useEffect(() => {
     const tracker = new GmailViewTracker((context) => {
       setViewContext(context);
-      setMainElement(context.mainElement ?? null);
       setOverlayVisible(Boolean(context.mainElement));
 
       if (!context.mainElement) {
@@ -124,24 +124,7 @@ const MailBitesApp = ({ host }: { host: HTMLElement }) => {
     }
   }, [expandedComposeIndex, setExpandedComposeIndex]);
 
-  // Click-outside handler to collapse expanded conversations
-  const handleClickOutside = useCallback((event: MouseEvent) => {
-    const target = event.target as HTMLElement;
-
-    const mouseDownInConversation = mouseDownTargetRef.current?.closest('.mail-bites-item');
-    const mouseDownInComposer = mouseDownTargetRef.current?.closest('.mail-bites-response-box');
-
-    if (mouseDownInConversation || mouseDownInComposer) {
-      return;
-    }
-
-    const clickedConversation = target.closest('.mail-bites-item');
-    const clickedComposer = target.closest('.mail-bites-response-box');
-
-    if (clickedConversation || clickedComposer) {
-      return;
-    }
-
+  const handleGlobalDismiss = useCallback(() => {
     const conversationStore = useConversationStore.getState();
     if (conversationStore.expandedId) {
       logger.info('Collapsing conversation via click-outside', { expandedId: conversationStore.expandedId });
@@ -155,42 +138,7 @@ const MailBitesApp = ({ host }: { host: HTMLElement }) => {
     }
   }, [expandedComposeIndex, setExpandedComposeIndex]);
 
-  useEffect(() => {
-    if (!isOverlayVisible) return;
-    
-    const handleMouseDown = (event: MouseEvent) => {
-      mouseDownTargetRef.current = event.target as HTMLElement;
-    };
-    
-    document.addEventListener('mousedown', handleMouseDown);
-    document.addEventListener('click', handleClickOutside);
-    
-    return () => {
-      document.removeEventListener('mousedown', handleMouseDown);
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, [isOverlayVisible, handleClickOutside]);
-
-  useEffect(() => {
-    if (!viewContext || !viewContext.mainElement) {
-      activeMainElementRef.current = null;
-      resetConversationStore();
-      resetToolbarStore();
-      resetComposerStore();
-      return;
-    }
-
-    const previousMain = activeMainElementRef.current;
-    const currentMain = viewContext.mainElement;
-
-    if (previousMain && previousMain !== currentMain) {
-      resetConversationStore();
-      resetToolbarStore();
-      resetComposerStore();
-    }
-
-    activeMainElementRef.current = currentMain;
-  }, [mainElement, viewContext]);
+  useClickOutside(overlayRef, handleGlobalDismiss, { isEnabled: isOverlayVisible });
 
   useEffect(() => {
     return () => {
@@ -203,6 +151,7 @@ const MailBitesApp = ({ host }: { host: HTMLElement }) => {
 
   return (
     <div
+      ref={overlayRef}
       className="mail-bites-overlay"
       data-mail-bites="overlay"
       aria-hidden={!isOverlayVisible}

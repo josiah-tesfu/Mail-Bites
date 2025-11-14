@@ -170,7 +170,11 @@ export class GmailViewTracker {
     const urlChanged = this.lastUrl !== currentUrl;
     const mainChanged = this.lastMainElement !== mainElement;
     const shouldEmit =
-      reason === 'initial' || urlChanged || mainChanged || !mainElement;
+      reason === 'initial' ||
+      reason === 'mutation' ||
+      urlChanged ||
+      mainChanged ||
+      !mainElement;
 
     if (!shouldEmit) {
       logger.info('Skipped view refresh; no changes detected.');
