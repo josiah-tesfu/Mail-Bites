@@ -2,17 +2,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, useRef } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
-import { useClickOutside } from '@/content/hooks/useClickOutside';
+import { useClickOutside, type UseClickOutsideShouldHandleArgs } from '@/content/hooks/useClickOutside';
 
 const Harness = ({
   isEnabled,
-  onOutside
+  onOutside,
+  shouldHandle
 }: {
   isEnabled: boolean;
   onOutside: (event: MouseEvent) => void;
+  shouldHandle?: (args: UseClickOutsideShouldHandleArgs) => boolean;
 }) => {
   const overlayRef = useRef<HTMLDivElement | null>(null);
-  useClickOutside(overlayRef, onOutside, { isEnabled });
+  useClickOutside(overlayRef, onOutside, { isEnabled, shouldHandle });
 
   return (
     <div data-testid="wrapper">
@@ -46,9 +48,13 @@ describe('useClickOutside', () => {
     container.remove();
   });
 
-  const renderHook = (isEnabled: boolean, handler: (event: MouseEvent) => void) => {
+  const renderHook = (
+    isEnabled: boolean,
+    handler: (event: MouseEvent) => void,
+    shouldHandle?: (args: UseClickOutsideShouldHandleArgs) => boolean
+  ) => {
     act(() => {
-      root.render(<Harness isEnabled={isEnabled} onOutside={handler} />);
+      root.render(<Harness isEnabled={isEnabled} onOutside={handler} shouldHandle={shouldHandle} />);
     });
   };
 
@@ -93,5 +99,27 @@ describe('useClickOutside', () => {
 
     click(outsideNode);
     expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('uses custom shouldHandle logic when provided', () => {
+    const handler = vi.fn();
+    const shouldHandle = vi.fn(({ target }) => {
+      return !(target?.dataset.testid === 'special');
+    });
+
+    const specialButton = document.createElement('button');
+    specialButton.dataset.testid = 'special';
+    document.body.appendChild(specialButton);
+
+    renderHook(true, handler, shouldHandle);
+
+    click(specialButton);
+    expect(handler).not.toHaveBeenCalled();
+    expect(shouldHandle).toHaveBeenCalled();
+
+    click(outsideNode);
+    expect(handler).toHaveBeenCalledTimes(1);
+
+    specialButton.remove();
   });
 });

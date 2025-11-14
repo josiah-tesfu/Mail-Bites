@@ -8,7 +8,7 @@ import { ensureManropeFont } from './fontLoader';
 import { logger } from './logger';
 import { useGmailConversations } from './hooks/useGmailConversations';
 import { useMainElementReset } from './hooks/useMainElementReset';
-import { useClickOutside } from './hooks/useClickOutside';
+import { useClickOutside, type UseClickOutsideShouldHandleArgs } from './hooks/useClickOutside';
 import { resetComposerStore, resetConversationStore, resetToolbarStore, useComposerStore, useConversationStore } from './store';
 import type { ComposerActionType } from './ui/types/actionTypes';
 import type { ConversationData } from './ui/conversationParser';
@@ -126,6 +126,14 @@ const MailBitesApp = ({ host }: { host: HTMLElement }) => {
 
   const handleGlobalDismiss = useCallback(() => {
     const conversationStore = useConversationStore.getState();
+
+    // Close any inline reply/forward composers.
+    conversationStore.conversationModes.forEach((mode, conversationId) => {
+      if (mode !== 'read') {
+        conversationStore.setConversationMode(conversationId, 'read');
+      }
+    });
+
     if (conversationStore.expandedId) {
       logger.info('Collapsing conversation via click-outside', { expandedId: conversationStore.expandedId });
       conversationStore.collapseConversation(conversationStore.expandedId);
@@ -138,7 +146,28 @@ const MailBitesApp = ({ host }: { host: HTMLElement }) => {
     }
   }, [expandedComposeIndex, setExpandedComposeIndex]);
 
-  useClickOutside(overlayRef, handleGlobalDismiss, { isEnabled: isOverlayVisible });
+  const shouldHandleClickOutside = useCallback(({ target, mouseDownTarget }: UseClickOutsideShouldHandleArgs) => {
+    const interactedWithConversation = (element: HTMLElement | null) =>
+      Boolean(element?.closest('.mail-bites-item'));
+    const interactedWithComposer = (element: HTMLElement | null) =>
+      Boolean(element?.closest('.mail-bites-response-box'));
+
+    if (
+      interactedWithConversation(target) ||
+      interactedWithConversation(mouseDownTarget) ||
+      interactedWithComposer(target) ||
+      interactedWithComposer(mouseDownTarget)
+    ) {
+      return false;
+    }
+
+    return true;
+  }, []);
+
+  useClickOutside(overlayRef, handleGlobalDismiss, {
+    isEnabled: isOverlayVisible,
+    shouldHandle: shouldHandleClickOutside
+  });
 
   useEffect(() => {
     return () => {

@@ -114,7 +114,7 @@ const ComposerBox: React.FC<ComposerBoxProps> = memo(({
     return (
       <div
         ref={boxRef}
-        className="mail-bites-response-box mail-bites-response-box--collapsed mail-bites-item"
+        className="mail-bites-response-box mail-bites-response-box--collapsed mail-bites-item mail-bites-card mail-bites-card--collapsed"
         data-conversation-id={conversation?.id}
         data-compose-index={composeIndex}
         data-response-mode={mode}
@@ -133,7 +133,7 @@ const ComposerBox: React.FC<ComposerBoxProps> = memo(({
   return (
     <div
       ref={boxRef}
-      className="mail-bites-response-box"
+      className="mail-bites-response-box mail-bites-card"
       data-conversation-id={conversation?.id}
       data-compose-index={composeIndex}
       data-response-mode={mode}

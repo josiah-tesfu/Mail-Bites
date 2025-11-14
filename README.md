@@ -2,7 +2,7 @@
 Mail Bites is an application designed to reduce the time and effort spent checking emails.
 
 ## Getting Started
-Follow `docs/setup.md` for build and loading instructions, review the current architecture in `docs/architecture.md`, and check `docs/updates.md` for a concise history of repository changes. Testing guidance lives in `docs/testing.md`.
+Follow `docs/setup.md` for build and loading instructions, review the current architecture in `docs/architecture.md`, and check `docs/updates.md` for a concise history of repository changes. Testing guidance lives in `docs/testing.md`. Planning/dependency notes now live under `docs/planning/`.
 
 ## Features
 

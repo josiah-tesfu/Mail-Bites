@@ -1,0 +1,39 @@
+# Dependency Tree
+
+- Omitted external `node_modules/` packages from this hierarchy.
+- `src/content/index.tsx:1` — Boots the Mail Bites React root and coordinates Gmail view tracking with React hooks/stores (imports: `react`, `react-dom/client`, `./fontLoader.ts`, `./logger.ts`, `./hooks`, `./store`, `./viewTracker.ts`).
+- `src/content/hooks/useAnimations.ts:1` — React hook that schedules toolbar/search/composer animations with tracked timeouts (imports: `react`).
+- `src/content/store/index.ts:1` — Re-exports all Zustand slices for consumption by React components (imports: `./useConversationStore.ts`, `./useToolbarStore.ts`, `./useComposerStore.ts`).
+  - `src/content/store/useConversationStore.ts:1` — Manages conversation list state, expansion, dismissal, and hover timing (imports: `zustand`, `../ui/conversationParser.ts`).
+  - `src/content/store/useToolbarStore.ts:1` — Tracks toolbar search state, filter ordering, and collapse behavior (imports: `zustand`).
+  - `src/content/store/useComposerStore.ts:1` — Handles compose box counts, drafts, and animation flags (imports: `zustand`, `../types/draft.ts`).
+- `src/content/types/draft.ts:1` — Declares the shared `DraftData` interface for compose state (imports: none).
+- `vite.config.ts:1` — Configures the Vite build to emit the Chrome content script directly into `extension/`, copying shared styles and icons (imports: `vite`, `@vitejs/plugin-react`, `fs/promises`, `path`).
+    - `src/content/logger.ts:1` — Provides a console wrapper that prefixes Mail Bites logs (imports: none).
+    - `src/content/viewTracker.ts:1` — Debounced observer that detects Gmail SPA navigation and DOM changes (imports: `./logger.ts`, `./navigation.ts`).
+      - `src/content/navigation.ts:1` — Monkey-patches History API methods to notify registered navigation listeners (imports: none).
+      - `src/content/ui/conversationParser.ts:1` — Normalizes Gmail conversation rows into structured data objects for rendering (imports: `./types/types.ts`).
+        - `src/content/ui/types/types.ts:1` — Declares the DOM shape used when parsing Gmail conversation rows (imports: none).
+      - `src/content/ui/types/actionTypes.ts:1` — Enumerates string literal unions for toolbar, action, preview, and composer events (imports: none).
+    - `src/content/fontLoader.ts:1` — Lazily injects the Manrope font stylesheet into Gmail to support the overlay typography (imports: none).
+- `src/content/styles/content.css:1` — Defines visual styles for the overlay layout, toolbar, items, and animations (imports: none).
+- `src/content/styles/animations.css:1` — Houses shared keyframe animations for cards, buttons, and compose transitions (imports: none).
+- `tests/setup/vitest.setup.ts:1` — Sets up a mocked Chrome API and Vitest helpers for unit tests (imports: `vitest`).
+- `tests/unit/conversationParser.test.ts:1` — Validates Gmail row parsing logic against various DOM scenarios (imports: `vitest`, `@/content/ui/conversationParser`).
+- `tests/unit/minimalInboxRenderer.test.ts:1` — Exercises the renderer’s filtering, expansion, and response flows in jsdom (imports: `vitest`, `@/content/ui/minimalInboxRenderer`, `@/content/viewTracker` types`).
+- `tests/unit/store/stores.test.ts:1` — Verifies Zustand store behaviors for conversations, toolbar, and composer slices (imports: `vitest`, `@/content/store`, `@/content/ui/conversationParser`, `@/content/types/draft`).
+- `tests/unit/fontLoader.test.ts:1` — Confirms the font loader injects a single stylesheet link (imports: `vitest`, `@/content/fontLoader`).
+- `tests/unit/README.md:1` — Documents goals and structure of the unit test suite (imports: none).
+- `tests/integration/README.md:1` — Describes the Playwright extension test strategy and setup (imports: none).
+- `vitest.config.ts:1` — Configures Vitest with jsdom, aliases, and shared setup file (imports: `vitest/config`, `path`).
+- `playwright.config.ts:1` — Launches Playwright with the packed extension for browser-based tests (imports: `@playwright/test`, `path`).
+- `tsconfig.json:1` — TypeScript compiler settings including path aliases for `@/` (imports: none).
+- `package.json:1` — Declares project metadata, dev dependencies, and npm scripts (imports: none).
+- `package-lock.json:1` — Pinpoints exact dependency versions for reproducible installs (imports: none).
+- `README.md:1` — Explains the Mail Bites project scope and local development workflow (imports: none).
+- `docs/architecture.md:1` — Captures high-level architecture decisions and planned evolutions (imports: none).
+- `docs/known-issues.md:1` — Lists current bugs and limitations to track (imports: none).
+- `docs/project_roadmap.md:1` — Outlines staged milestones for future work (imports: none).
+- `docs/refactor.md:1` — Records refactor plans and debt cleanup ideas (imports: none).
+- `docs/setup.md:1` — Provides detailed environment setup instructions (imports: none).
+- `docs/testing.md:1` — Summarizes testing strategy across unit and integration layers (imports: none).

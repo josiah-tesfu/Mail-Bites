@@ -207,6 +207,7 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
   // Build CSS class names
   const classNames = [
     'mail-bites-item',
+    'mail-bites-card',
     showExpandedStyles && 'is-expanded',
     isCollapsing && 'is-collapsing',
     effectiveHovered && 'is-hovered',

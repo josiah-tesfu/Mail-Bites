@@ -17,14 +17,14 @@
 
 ### 4. Styling & Assets Cleanup
 - Fix the malformed `mail-bites-rotate-open` keyframe in `src/content/styles/animations.css` (extra braces currently break the animation).
-- Remove the unused legacy builders/animation controller (`src/content/ui/**/*Builder.ts`, `AnimationController.ts`, `content.css`, etc.) and stop referencing them in `dependencies.md`.
+- Remove the unused legacy builders/animation controller (`src/content/ui/**/*Builder.ts`, `AnimationController.ts`, `content.css`, etc.) and stop referencing them in `docs/planning/dependencies.md`.
 - Stop copying orphaned assets (e.g., `assets/templates/composer-divider.html`) if the React components never load them.
 
 ### 5. Documentation Reliability
 - Rebuild empty or stale docs (`docs/architecture.md`, `docs/project_roadmap.md`, `docs/updates.md`) so newcomers can trust the plan.
 - Clean `docs/react-interface-map.md` (remove the stray external PDF link) and update sections that still describe unimplemented hooks/components.
 - Refresh composer docs (`docs/composer-implementation.md`) to note the inline-at-top layout as the intended design.
-- Audit `dependencies.md` to match the React codebase (drop `minimalInboxRenderer`, legacy builders, etc.).
+- Audit `docs/planning/dependencies.md` to match the React codebase (drop `minimalInboxRenderer`, legacy builders, etc.).
 
 ### 6. Build & Tooling
 - Adopt the Vite build so bundles ship minified with the correct React env flags (esbuild helper removed).

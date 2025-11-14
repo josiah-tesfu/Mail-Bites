@@ -20,6 +20,17 @@
   gap: 16px;
 }
 
+/* Shared card alignment */
+.mail-bites-card {
+  width: 100%;
+  margin: 12px 0 24px;
+  box-sizing: border-box;
+}
+
+.mail-bites-card--collapsed {
+  margin: 0;
+}
+
 /* === Inbox Layout === */
 .mail-bites-inbox {
   --detail-gap: 36px;
@@ -34,8 +45,10 @@
 .mail-bites-toolbar {
   display: flex;
   gap: 20px;
-  margin-bottom: 24px;
+  margin: 0 auto 24px;
   align-items: flex-end;
+  max-width: 840px;
+  width: 100%;
 }
 
 .mail-bites-toolbar-filter {
@@ -179,10 +192,6 @@
   margin: 0;
 }
 
-.mail-bites-inline-composer .mail-bites-response-box {
-  margin: 12px 0 24px;
-}
-
 /* === Empty State === */
 .mail-bites-empty {
   text-align: center;
@@ -198,6 +207,7 @@
   border-left-color: transparent;
   border-right-color: transparent;
   border-radius: 0;
+  margin: 0;
   padding: 18px 20px;
   background: #ffffff;
   cursor: pointer;
@@ -443,7 +453,6 @@
 
 /* response composer box */
 .mail-bites-response-box {
-  margin: 12px calc(var(--detail-gap) - 12px) 24px;
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -455,13 +464,7 @@
   transform-origin: center top;
 }
 
-/* standalone compose box (direct child of container, not inside item) */
-.mail-bites-inbox > .mail-bites-response-box {
-  margin: 12px 0 24px;
-}
-
 .mail-bites-response-box--collapsed {
-  margin: 0;
   padding: 18px 20px;
   display: block;
   border: 1px solid #c5c5c5;
