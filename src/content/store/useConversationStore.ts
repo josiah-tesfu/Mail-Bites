@@ -65,9 +65,38 @@ const createInitialState = (): ConversationState => ({
 export const useConversationStore = create<ConversationStore>((set, get) => ({
   ...createInitialState(),
   setConversations: (conversations) => {
-    set(() => ({
-      conversations: conversations.map((conversation) => ({ ...conversation }))
-    }));
+    set((state) => {
+      let readIdsChanged = false;
+      const readIds = new Set(state.readIds);
+
+      const nextConversations = conversations.map((conversation) => {
+        if (readIds.has(conversation.id)) {
+          if (!conversation.isUnread) {
+            readIds.delete(conversation.id);
+            readIdsChanged = true;
+            return { ...conversation };
+          }
+
+          return {
+            ...conversation,
+            isUnread: false
+          };
+        }
+
+        return { ...conversation };
+      });
+
+      if (readIdsChanged) {
+        return {
+          conversations: nextConversations,
+          readIds
+        };
+      }
+
+      return {
+        conversations: nextConversations
+      };
+    });
   },
   expandConversation: (id) => {
     const { conversationModes, expandedId } = get();

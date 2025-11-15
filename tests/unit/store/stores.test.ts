@@ -106,6 +106,27 @@ describe('useConversationStore', () => {
     expect(useConversationStore.getState().conversations).toHaveLength(0);
     expect(useConversationStore.getState().dismissedIds.size).toBe(0);
   });
+
+  it('keeps unread overrides until Gmail reports the updated state', () => {
+    const { setConversations, markAsRead } = useConversationStore.getState();
+    const unreadConversation = { ...sampleConversations[0] };
+    setConversations([unreadConversation]);
+
+    markAsRead(unreadConversation.id);
+
+    expect(useConversationStore.getState().readIds.has(unreadConversation.id)).toBe(true);
+    expect(useConversationStore.getState().conversations[0].isUnread).toBe(false);
+
+    setConversations([{ ...unreadConversation, isUnread: true }]);
+
+    expect(useConversationStore.getState().conversations[0].isUnread).toBe(false);
+    expect(useConversationStore.getState().readIds.has(unreadConversation.id)).toBe(true);
+
+    setConversations([{ ...unreadConversation, isUnread: false }]);
+
+    expect(useConversationStore.getState().conversations[0].isUnread).toBe(false);
+    expect(useConversationStore.getState().readIds.has(unreadConversation.id)).toBe(false);
+  });
 });
 
 describe('useToolbarStore', () => {

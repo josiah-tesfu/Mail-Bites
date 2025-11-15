@@ -1,10 +1,10 @@
-import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ConversationData } from '../../ui/conversationParser';
 import type { DraftData } from '../../types/draft';
 import type { ComposerActionType } from '../../ui/types/actionTypes';
 import { useConversationStore } from '../../store/useConversationStore';
 import { logger } from '../../logger';
-import { useAnimations } from '../../hooks/useAnimations';
+import { animationTimings } from '../../hooks/useAnimations';
 import ConversationDetails from './ConversationDetails';
 import ComposerBox from '../ComposerBox';
 
@@ -27,8 +27,6 @@ interface ConversationItemProps {
  * - Apply animation classes (is-expanded, is-collapsing, is-hovered)
  */
 const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }) => {
-  const { scheduleCollapseTimeout } = useAnimations();
-  
   // Store subscriptions
   const expandedId = useConversationStore((state) => state.expandedId);
   const collapsingId = useConversationStore((state) => state.collapsingId);
@@ -51,7 +49,7 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
 
   // Local state
   const [isHovered, setIsHovered] = useState(false);
-  const collapseTimeoutRef = useRef<(() => void) | null>(null);
+  const pendingReadRef = useRef(false);
 
   // Derived state
   const conversationId = conversation.id;
@@ -71,6 +69,10 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
 
   // Handle card click to toggle expand/collapse
   const handleClick = useCallback(() => {
+    if (isCollapsing) {
+      return;
+    }
+
     if (isExpanded) {
       setIsHovered(false);
       removeHoveredId(conversation.id);
@@ -83,18 +85,12 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
       setIsHovered(true);
       addHoveredId(conversation.id);
     }
-  }, [isExpanded, expandConversation, collapseConversation, conversation.id, mode, setInlineComposerCollapsed, removeHoveredId, addHoveredId]);
+  }, [isCollapsing, isExpanded, expandConversation, collapseConversation, conversation.id, mode, setInlineComposerCollapsed, removeHoveredId, addHoveredId]);
 
   // Handle mouse enter - cancel scheduled collapse
   const handleMouseEnter = useCallback(() => {
     setIsHovered(true);
     addHoveredId(conversation.id);
-    
-    // Cancel any pending collapse
-    if (collapseTimeoutRef.current) {
-      collapseTimeoutRef.current();
-      collapseTimeoutRef.current = null;
-    }
   }, [addHoveredId, conversation.id]);
 
   // Handle mouse leave - clear hover state only (no auto-collapse)
@@ -144,12 +140,7 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
 
   // Trigger bezel animation on expand
   const itemRef = useRef<HTMLElement>(null);
-  
-  useEffect(() => {
-    if (collapseTimeoutRef.current) {
-      collapseTimeoutRef.current();
-    }
-  }, [isExpanded, mode]);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!mode || mode === 'read') {
@@ -167,6 +158,30 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
       removeHoveredId(conversation.id);
     }
   }, [isExpanded, conversation.id, removeHoveredId]);
+
+  useEffect(() => {
+    if (isExpanded && conversation.isUnread) {
+      pendingReadRef.current = true;
+    }
+  }, [isExpanded, conversation.isUnread]);
+
+  useEffect(() => {
+    if (!conversation.isUnread) {
+      pendingReadRef.current = false;
+    }
+  }, [conversation.isUnread]);
+
+  useEffect(() => {
+    if (
+      pendingReadRef.current &&
+      !isExpanded &&
+      !isCollapsing &&
+      conversation.isUnread
+    ) {
+      pendingReadRef.current = false;
+      markAsRead(conversationId);
+    }
+  }, [conversation.isUnread, conversationId, isCollapsing, isExpanded, markAsRead]);
 
   // Handle fade-out animation
   useEffect(() => {
@@ -203,48 +218,70 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
     }
   }, [isFadingOut, finalizeDismiss, conversation.id]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+
     if (!isCollapsing) {
+      if (container) {
+        container.style.removeProperty('height');
+        container.style.removeProperty('overflow');
+      }
       return;
     }
 
-    let cancelled = false;
-    let completed = false;
+    if (!container) {
+      clearCollapseState();
+      return;
+    }
 
+    const measuredHeight =
+      container.scrollHeight || container.getBoundingClientRect().height;
+
+    let finished = false;
     const finishCollapse = () => {
-      if (cancelled || completed) {
+      if (finished) {
         return;
       }
-      completed = true;
+      finished = true;
+      container.style.removeProperty('height');
+      container.style.removeProperty('overflow');
       if (useConversationStore.getState().collapsingId === conversation.id) {
         clearCollapseState();
       }
     };
 
-    const item = itemRef.current;
-    let cleanupAnimation: (() => void) | null = null;
+    const fallbackDuration = animationTimings.COLLAPSE_TRANSITION_DURATION;
 
-    const cancelTimeout = scheduleCollapseTimeout(() => {
-      finishCollapse();
-    }, 250);
+    if (measuredHeight > 0) {
+      container.style.height = `${measuredHeight}px`;
+      container.style.overflow = 'hidden';
 
+      const rafId = window.requestAnimationFrame(() => {
+        container.style.height = '0px';
+      });
+
+      const handleTransitionEnd = (event: TransitionEvent) => {
+        if (event.target !== container || event.propertyName !== 'height') {
+          return;
+        }
+        finishCollapse();
+      };
+
+      container.addEventListener('transitionend', handleTransitionEnd);
+      const fallbackId = window.setTimeout(finishCollapse, fallbackDuration);
+
+      return () => {
+        window.cancelAnimationFrame(rafId);
+        container.removeEventListener('transitionend', handleTransitionEnd);
+        window.clearTimeout(fallbackId);
+      };
+    }
+
+    const fallbackId = window.setTimeout(finishCollapse, fallbackDuration);
     return () => {
-      cancelled = true;
-      cancelTimeout();
-      if (cleanupAnimation) {
-        cleanupAnimation();
-      }
+      window.clearTimeout(fallbackId);
     };
-  }, [isCollapsing, conversation.id, scheduleCollapseTimeout, clearCollapseState, mode]);
-
-  // Cleanup collapse timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (collapseTimeoutRef.current) {
-        collapseTimeoutRef.current();
-      }
-    };
-  }, []);
+  }, [isCollapsing, clearCollapseState, conversation.id]);
 
   const showExpandedStyles = isExpanded || isCollapsing;
   const forceHoverState = isCollapsing && (isHovered || isHighlighted);
@@ -265,8 +302,19 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
     .filter(Boolean)
     .join(' ');
 
+  const threadClasses = [
+    'mail-bites-thread',
+    isCollapsing && 'is-collapsing'
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <>
+    <div
+      ref={containerRef}
+      className={threadClasses}
+      data-conversation-id={conversation.id}
+    >
       <article
         ref={itemRef}
         className={classNames}
@@ -339,7 +387,7 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
       </article>
 
       {/* Composer box when in reply/forward mode */}
-      {isExpanded && mode && (mode === 'reply' || mode === 'forward') && (
+      {(isExpanded || isCollapsing) && mode && (mode === 'reply' || mode === 'forward') && (
         <div className="mail-bites-inline-composer">
           <ComposerBox
             conversation={conversation}
@@ -352,7 +400,7 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
           />
         </div>
       )}
-    </>
+    </div>
   );
 });
 

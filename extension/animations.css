@@ -148,3 +148,14 @@
 .mail-bites-toolbar .mail-bites-action.is-appearing-expanded {
   animation: mail-bites-expanded-icon-appear 0.25s ease-out forwards;
 }
+
+@keyframes mail-bites-collapse-card {
+  0% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleY(0);
+  }
+}

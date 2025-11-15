@@ -31,6 +31,36 @@
   margin: 0;
 }
 
+.mail-bites-thread {
+  position: relative;
+  margin: 0;
+  transition: height 0.35s cubic-bezier(0.33, 1, 0.68, 1);
+  will-change: height;
+}
+
+.mail-bites-thread > .mail-bites-item.mail-bites-card {
+  margin: 0;
+}
+
+.mail-bites-thread + .mail-bites-thread {
+  margin-top: -1px;
+}
+
+.mail-bites-thread.is-collapsing {
+  pointer-events: none;
+  margin: 0;
+}
+
+.mail-bites-item.is-collapsing {
+  transform-origin: top center;
+  animation: mail-bites-collapse-card 0.35s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+}
+
+.mail-bites-thread.is-collapsing .mail-bites-inline-composer {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
 /* === Inbox Layout === */
 .mail-bites-inbox {
   --detail-gap: 36px;
