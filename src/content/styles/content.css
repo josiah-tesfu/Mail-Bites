@@ -198,6 +198,16 @@
   z-index: 1;
 }
 
+.mail-bites-item.is-composer-active + .mail-bites-inline-composer .mail-bites-response-box:not(.mail-bites-card--collapsed) {
+  transform: translateY(-3px) scale(1.01);
+  transform-origin: center top;
+}
+
+.mail-bites-item.is-composer-active + .mail-bites-inline-composer .mail-bites-response-box.mail-bites-card--collapsed {
+  transform: translateY(-3px) scale(1.01);
+  transform-origin: center top;
+}
+
 /* === Empty State === */
 .mail-bites-empty {
   text-align: center;
@@ -246,7 +256,7 @@
 
 /* collapsing state - keep bezel animation in control */
 .mail-bites-item.is-composer-active {
-  border-color: rgba(0, 0, 0, 0.45);
+  border-color: #000000;
   color: rgba(17, 17, 17, 0.6);
 }
 
@@ -390,9 +400,26 @@
   transform: scale(1.0); /* shrink on click */
 }
 
+.mail-bites-details-container {
+  margin: 0;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition:
+    max-height 150ms cubic-bezier(0.33, 1, 0.68, 1),
+    opacity 150ms cubic-bezier(0.33, 1, 0.68, 1),
+    margin 150ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.mail-bites-details-container.is-expanded {
+  margin: 12px 0 0;
+  max-height: 1000px;
+  opacity: 1;
+}
+
 /* === Expanded Preview === */
 .mail-bites-item-details {
-  margin: 12px calc(var(--detail-gap) - 12px) 0;
+  margin: 0;
   padding: 16px 18px;
   background: transparent;
   border: none;
@@ -404,14 +431,7 @@
   max-height: 0;
   transform: translateY(-6px);
   overflow: hidden;
-  transition: opacity 600ms ease, transform 200ms ease, max-height 200ms ease;
-}
-
-.mail-bites-item-details.is-visible {
-  opacity: 1;
-  max-height: 600px; /* accommodate standard email previews */
-  transform: translateY(0);
-  overflow: visible;
+  transition: none;
 }
 
 /* preview actions positioned under snippet */
@@ -498,12 +518,6 @@
   flex-direction: column;
   opacity: 1;
   transform: translateY(0);
-  transition: opacity 200ms ease, transform 200ms ease;
-}
-
-.mail-bites-response-box.is-collapsing .mail-bites-composer-body {
-  opacity: 0;
-  transform: translateY(-6px);
 }
 
 /* composer section with divider */

@@ -72,14 +72,18 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
   // Handle card click to toggle expand/collapse
   const handleClick = useCallback(() => {
     if (isExpanded) {
+      setIsHovered(false);
+      removeHoveredId(conversation.id);
       if (mode && mode !== 'read') {
         setInlineComposerCollapsed(conversation.id, true);
       }
       collapseConversation(conversation.id);
     } else {
       expandConversation(conversation.id);
+      setIsHovered(true);
+      addHoveredId(conversation.id);
     }
-  }, [isExpanded, expandConversation, collapseConversation, conversation.id, mode, setInlineComposerCollapsed]);
+  }, [isExpanded, expandConversation, collapseConversation, conversation.id, mode, setInlineComposerCollapsed, removeHoveredId, addHoveredId]);
 
   // Handle mouse enter - cancel scheduled collapse
   const handleMouseEnter = useCallback(() => {

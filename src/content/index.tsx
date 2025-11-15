@@ -158,6 +158,7 @@ const MailBitesApp = ({ host }: { host: HTMLElement }) => {
       logger.info('Collapsing conversation via click-outside', { expandedId: currentExpandedId });
       conversationStore.collapseConversation(currentExpandedId);
       conversationStore.setHighlightedId(null);
+      conversationStore.removeHoveredId(currentExpandedId);
     }
   }, [expandedComposeIndex, setExpandedComposeIndex]);
 

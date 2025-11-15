@@ -29,50 +29,17 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
   const setConversationMode = useConversationStore((state) => state.setConversationMode);
   const setInlineComposerCollapsed = useConversationStore((state) => state.setInlineComposerCollapsed);
   const markAsRead = useConversationStore((state) => state.markAsRead);
-  const [isVisible, setIsVisible] = useState(false);
-  const [shouldMount, setShouldMount] = useState(isExpanded);
-  const detailsRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(isExpanded);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Handle expand/collapse animation
   useEffect(() => {
     if (isExpanded) {
-      setShouldMount(true);
-      requestAnimationFrame(() => {
-        setIsVisible(true);
-      });
+      requestAnimationFrame(() => setIsVisible(true));
     } else {
-      setIsVisible(false);
-      
-      // If not collapsing (switching conversations), unmount immediately
-      if (!isCollapsing) {
-        setShouldMount(false);
-        return;
-      }
-      
-      // Wait for transitionend to unmount (matching legacy behavior)
-      const details = detailsRef.current;
-      if (details) {
-        let handled = false;
-        const handleTransitionEnd = () => {
-          if (handled) return;
-          handled = true;
-          setShouldMount(false);
-        };
-        
-        details.addEventListener('transitionend', handleTransitionEnd, { once: true });
-        
-        // Fallback timeout matching AnimationController.COLLAPSE_TIMEOUT
-        const timeoutId = window.setTimeout(handleTransitionEnd, 600);
-        
-        return () => {
-          window.clearTimeout(timeoutId);
-          details.removeEventListener('transitionend', handleTransitionEnd);
-        };
-      } else {
-        setShouldMount(false);
-      }
+      requestAnimationFrame(() => setIsVisible(false));
     }
-  }, [isExpanded, isCollapsing]);
+  }, [isExpanded]);
 
   const handleReplyClick = useCallback(
     (e: React.MouseEvent) => {
@@ -94,14 +61,13 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     [setConversationMode, setInlineComposerCollapsed, conversation.id]
   );
 
-  if (!shouldMount) {
-    return null;
-  }
-
   return (
-    <>
+    <div
+      ref={containerRef}
+      className={`mail-bites-details-container ${isVisible ? 'is-expanded' : ''}`}
+    >
       {/* Snippet preview */}
-      <div ref={detailsRef} className={`mail-bites-item-details ${isVisible ? 'is-visible' : ''}`}>
+      <div className="mail-bites-item-details">
         {conversation.snippet || 'No preview available for this conversation.'}
       </div>
 
@@ -138,7 +104,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
           </button>
         </div>
       )}
-    </>
+    </div>
   );
 };
 

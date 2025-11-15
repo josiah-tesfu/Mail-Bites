@@ -88,6 +88,7 @@ const ComposerBox: React.FC<ComposerBoxProps> = memo(({
   }, []);
 
   const latestDraftRef = useRef(localDraft);
+  const shouldPersistInlineDraftRef = useRef(true);
   useEffect(() => {
     latestDraftRef.current = localDraft;
   }, [localDraft]);
@@ -108,6 +109,10 @@ const ComposerBox: React.FC<ComposerBoxProps> = memo(({
 
   const persistInlineDraft = useCallback(() => {
     const { conversation: conv, onDraftChange: draftCb, isInlineComposer: inline } = inlineDraftContextRef.current;
+    if (!shouldPersistInlineDraftRef.current) {
+      return;
+    }
+
     if (inline && draftCb && conv) {
       draftCb({
         ...latestDraftRef.current,
@@ -129,30 +134,19 @@ const ComposerBox: React.FC<ComposerBoxProps> = memo(({
     };
   }, [persistInlineDraft]);
 
-  // Trigger bezel surface animation on mount (expanded state only)
-  useEffect(() => {
-    if (isExpanded && boxRef.current) {
-      const box = boxRef.current;
-      box.classList.remove('mail-bites-anim-bezel-surface');
-      void box.offsetWidth; // Force reflow
-      box.classList.add('mail-bites-anim-bezel-surface');
-      
-      const handleAnimationEnd = () => {
-        box.classList.remove('mail-bites-anim-bezel-surface');
-      };
-      
-      box.addEventListener('animationend', handleAnimationEnd, { once: true });
-      return () => {
-        box.removeEventListener('animationend', handleAnimationEnd);
-      };
-    }
-  }, [isExpanded]);
-
   // Handle action button clicks
   const handleAction = useCallback((type: ComposerActionType) => {
     if (type === 'close') {
+      shouldPersistInlineDraftRef.current = true;
       persistInlineDraft();
     }
+
+    if (type === 'delete' || type === 'send') {
+      shouldPersistInlineDraftRef.current = false;
+    } else {
+      shouldPersistInlineDraftRef.current = true;
+    }
+
     onAction(type, conversation, composeIndex);
   }, [onAction, conversation, composeIndex, persistInlineDraft]);
 
