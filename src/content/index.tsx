@@ -95,6 +95,14 @@ const MailBitesApp = ({ host }: { host: HTMLElement }) => {
       return;
     }
 
+    if (type === 'close') {
+      if (expandedComposeIndex === composeIndex) {
+        setExpandedComposeIndex(null);
+      }
+      logger.info('Draft collapsed.', { composeIndex });
+      return;
+    }
+
     if (type === 'delete') {
       const draft = composeDrafts.get(composeIndex);
       if (draft) {
@@ -113,7 +121,7 @@ const MailBitesApp = ({ host }: { host: HTMLElement }) => {
     }
 
     logger.info('Standalone composer action not implemented:', type, composeIndex);
-  }, [composeDrafts, removeComposeBox, saveDraft, sendEmail]);
+  }, [composeDrafts, expandedComposeIndex, removeComposeBox, saveDraft, sendEmail, setExpandedComposeIndex]);
 
   // Handle compose box click to expand
   const handleComposeBoxClick = useCallback((index: number) => {

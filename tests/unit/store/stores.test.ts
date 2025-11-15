@@ -58,11 +58,13 @@ describe('useConversationStore', () => {
       setConversations,
       dismissConversation,
       finalizeDismiss,
-      setConversationMode
+      setConversationMode,
+      setHighlightedId
     } = useConversationStore.getState();
 
     setConversations(sampleConversations);
     setConversationMode('thread-1', 'reply');
+    setHighlightedId('thread-1');
 
     expect(
       useConversationStore.getState().conversationModes.get('thread-1')
@@ -76,6 +78,7 @@ describe('useConversationStore', () => {
     expect(useConversationStore.getState().dismissedIds.has('thread-1')).toBe(
       false
     );
+    expect(useConversationStore.getState().highlightedId).toBeNull();
 
     finalizeDismiss('thread-1');
     expect(useConversationStore.getState().dismissedIds.has('thread-1')).toBe(

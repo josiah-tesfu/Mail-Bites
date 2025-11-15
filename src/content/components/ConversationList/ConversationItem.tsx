@@ -46,6 +46,7 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
 
   // Local state
   const [isHovered, setIsHovered] = useState(false);
+  const [isComposerCollapsed, setIsComposerCollapsed] = useState(false);
   const collapseTimeoutRef = useRef<(() => void) | null>(null);
 
   // Derived state
@@ -97,14 +98,21 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
       return;
     }
 
+    if (type === 'close') {
+      setIsComposerCollapsed(true);
+      return;
+    }
+
     if (type === 'delete') {
       setConversationMode(conv.id, 'read');
+      setIsComposerCollapsed(false);
       return;
     }
 
     if (type === 'send') {
       markAsRead(conv.id);
       setConversationMode(conv.id, 'read');
+      setIsComposerCollapsed(false);
       logger.info('Inline reply sent (placeholder).', { conversationId: conv.id });
       return;
     }
@@ -120,6 +128,19 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
       collapseTimeoutRef.current();
     }
   }, [isExpanded, mode]);
+
+  useEffect(() => {
+    if (!mode || mode === 'read') {
+      setIsComposerCollapsed(false);
+    }
+  }, [mode]);
+
+  useEffect(() => {
+    if (!isExpanded && mode && mode !== 'read') {
+      setConversationMode(conversation.id, 'read');
+      setIsComposerCollapsed(false);
+    }
+  }, [isExpanded, mode, conversation.id, setConversationMode]);
 
   // Handle fade-out animation
   useEffect(() => {
@@ -297,7 +318,8 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
           <ComposerBox
             conversation={conversation}
             mode={mode}
-            isExpanded={true}
+            isExpanded={!isComposerCollapsed}
+            onExpandCollapsed={() => setIsComposerCollapsed(false)}
             onAction={handleComposerAction}
           />
         </div>

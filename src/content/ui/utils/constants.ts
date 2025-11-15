@@ -22,13 +22,15 @@ export const PREVIEW_ACTION_LABELS: Record<PreviewActionType, string> = {
 
 export const COMPOSER_ACTION_ICON_MAP: Record<ComposerActionType, string> = {
   send: 'send-button.svg',
-  delete: 'close-draft.svg',
+  close: 'close-draft.svg',
+  delete: 'delete-button.svg',
   attachments: 'attachments-button.svg'
 };
 
 export const COMPOSER_ACTION_LABELS: Record<ComposerActionType, string> = {
   send: 'Send message',
-  delete: 'Close draft',
+  close: 'Close draft',
+  delete: 'Delete draft',
   attachments: 'Add attachments'
 };
 

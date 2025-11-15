@@ -18,6 +18,7 @@ interface ComposerBoxProps {
     conversation: ConversationData | null,
     composeIndex?: number
   ) => void;
+  onExpandCollapsed?: () => void;
 }
 
 /**
@@ -39,7 +40,8 @@ const ComposerBox: React.FC<ComposerBoxProps> = memo(({
   composeIndex,
   isExpanded = true,
   draft,
-  onAction
+  onAction,
+  onExpandCollapsed
 }) => {
   const boxRef = useRef<HTMLDivElement>(null);
   const [localDraft, setLocalDraft] = useState<DraftData>(() => ({
@@ -104,26 +106,51 @@ const ComposerBox: React.FC<ComposerBoxProps> = memo(({
 
   // Handle expand request
   const handleExpand = useCallback(() => {
-    // This would be called by CollapsedDraft onClick
-    // For standalone boxes, parent handles expand via store
-    // For reply/forward boxes, they don't collapse
-  }, []);
+    if (onExpandCollapsed) {
+      onExpandCollapsed();
+    }
+  }, [onExpandCollapsed]);
 
   // Render collapsed draft preview
+  const [isCollapsedHovered, setIsCollapsedHovered] = useState(false);
+
+  useEffect(() => {
+    if (isExpanded) {
+      setIsCollapsedHovered(false);
+    }
+  }, [isExpanded]);
+
   if (!isExpanded) {
+    const collapsedClasses = [
+      'mail-bites-response-box',
+      'mail-bites-response-box--collapsed',
+      'mail-bites-item',
+      'mail-bites-card',
+      'mail-bites-card--collapsed',
+      'is-expanded',
+      'is-active'
+    ];
+
+    if (isCollapsedHovered) {
+      collapsedClasses.push('is-hovered');
+    }
+
     return (
       <div
         ref={boxRef}
-        className="mail-bites-response-box mail-bites-response-box--collapsed mail-bites-item mail-bites-card mail-bites-card--collapsed"
+        className={collapsedClasses.join(' ')}
         data-conversation-id={conversation?.id}
         data-compose-index={composeIndex}
         data-response-mode={mode}
+        onClick={handleExpand}
+        onMouseEnter={() => setIsCollapsedHovered(true)}
+        onMouseLeave={() => setIsCollapsedHovered(false)}
       >
         <CollapsedDraft
           recipient={localDraft.to || ''}
           subject={localDraft.subject || ''}
           timestamp={localDraft.timestamp}
-          onExpand={handleExpand}
+          onDelete={() => handleAction('delete')}
         />
       </div>
     );
@@ -167,9 +194,9 @@ const ComposerBox: React.FC<ComposerBoxProps> = memo(({
         {/* Action buttons */}
         <ComposerActions
           onSend={() => handleAction('send')}
-          onClose={() => handleAction('delete')}
+          onClose={() => handleAction('close')}
+          onDelete={() => handleAction('delete')}
           onAttach={() => handleAction('attachments')}
-          showDelete={Boolean(conversation)}
         />
       </div>
     </div>

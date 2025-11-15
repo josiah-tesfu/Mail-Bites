@@ -192,6 +192,12 @@
   margin: 0;
 }
 
+.mail-bites-inline-composer .mail-bites-response-box {
+  margin-top: -1px;
+  position: relative;
+  z-index: 1;
+}
+
 /* === Empty State === */
 .mail-bites-empty {
   text-align: center;
@@ -421,6 +427,13 @@
 .mail-bites-action-row--composer {
   margin: 2px 0 18px 0;
   padding: 0 20px;
+  align-items: center;
+  gap: 20px;
+}
+
+.mail-bites-composer-actions-left {
+  display: flex;
+  gap: 20px;
 }
 
 .mail-bites-action-button {
@@ -441,6 +454,10 @@
   height: 24px;
   object-fit: contain;
   display: block;
+}
+
+.mail-bites-composer-action-delete {
+  margin-left: auto;
 }
 
 .mail-bites-action-button:hover {

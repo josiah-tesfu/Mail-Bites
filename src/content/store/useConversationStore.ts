@@ -91,7 +91,8 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
 
       return {
         fadingOutIds,
-        expandedId: state.expandedId === id ? null : state.expandedId
+        expandedId: state.expandedId === id ? null : state.expandedId,
+        highlightedId: state.highlightedId === id ? null : state.highlightedId
       };
     });
   },
