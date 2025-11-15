@@ -27,6 +27,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
   mode
 }) => {
   const setConversationMode = useConversationStore((state) => state.setConversationMode);
+  const setInlineComposerCollapsed = useConversationStore((state) => state.setInlineComposerCollapsed);
   const markAsRead = useConversationStore((state) => state.markAsRead);
   const [isVisible, setIsVisible] = useState(false);
   const [shouldMount, setShouldMount] = useState(isExpanded);
@@ -78,8 +79,9 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       e.stopPropagation();
       e.preventDefault();
       setConversationMode(conversation.id, 'reply');
+      setInlineComposerCollapsed(conversation.id, false);
     },
-    [setConversationMode, conversation.id]
+    [setConversationMode, setInlineComposerCollapsed, conversation.id]
   );
 
   const handleForwardClick = useCallback(
@@ -87,8 +89,9 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       e.stopPropagation();
       e.preventDefault();
       setConversationMode(conversation.id, 'forward');
+      setInlineComposerCollapsed(conversation.id, false);
     },
-    [setConversationMode, conversation.id]
+    [setConversationMode, setInlineComposerCollapsed, conversation.id]
   );
 
   if (!shouldMount) {

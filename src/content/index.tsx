@@ -142,10 +142,15 @@ const MailBitesApp = ({ host }: { host: HTMLElement }) => {
 
     const currentExpandedId = conversationStore.expandedId;
 
-    // Close any inline reply/forward composers.
+    // Close any inline reply/forward composers by collapsing them if a draft exists;
+    // otherwise revert them to read mode.
     conversationStore.conversationModes.forEach((mode, conversationId) => {
       if (mode !== 'read') {
-        conversationStore.setConversationMode(conversationId, 'read');
+        if (conversationStore.inlineDrafts.has(conversationId)) {
+          conversationStore.setInlineComposerCollapsed(conversationId, true);
+        } else {
+          conversationStore.setConversationMode(conversationId, 'read');
+        }
       }
     });
 

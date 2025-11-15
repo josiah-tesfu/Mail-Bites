@@ -1,5 +1,6 @@
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import type { ConversationData } from '../../ui/conversationParser';
+import type { DraftData } from '../../types/draft';
 import type { ComposerActionType } from '../../ui/types/actionTypes';
 import { useConversationStore } from '../../store/useConversationStore';
 import { logger } from '../../logger';
@@ -43,27 +44,42 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
   const addHoveredId = useConversationStore((state) => state.addHoveredId);
   const removeHoveredId = useConversationStore((state) => state.removeHoveredId);
   const clearCollapseState = useConversationStore((state) => state.clearCollapseState);
+  const inlineDraft = useConversationStore((state) => state.inlineDrafts.get(conversation.id));
+  const clearInlineDraft = useConversationStore((state) => state.clearInlineDraft);
+  const isComposerCollapsed = useConversationStore((state) => state.inlineComposerCollapsed.has(conversation.id));
+  const setInlineComposerCollapsed = useConversationStore((state) => state.setInlineComposerCollapsed);
 
   // Local state
   const [isHovered, setIsHovered] = useState(false);
-  const [isComposerCollapsed, setIsComposerCollapsed] = useState(false);
   const collapseTimeoutRef = useRef<(() => void) | null>(null);
 
   // Derived state
-  const isExpanded = expandedId === conversation.id;
+  const conversationId = conversation.id;
+  const isExpanded = expandedId === conversationId;
   const isCollapsing = collapsingId === conversation.id;
   const isHighlighted = highlightedId === conversation.id;
   const isFadingOut = fadingOutIds.has(conversation.id);
   const mode = conversationModes.get(conversation.id) || null;
 
+  const handleInlineDraftChange = useCallback((nextDraft: DraftData) => {
+    useConversationStore.getState().setInlineDraft(conversationId, nextDraft);
+  }, [conversationId]);
+
+  const handleInlineExpand = useCallback(() => {
+    setInlineComposerCollapsed(conversationId, false);
+  }, [setInlineComposerCollapsed, conversationId]);
+
   // Handle card click to toggle expand/collapse
   const handleClick = useCallback(() => {
     if (isExpanded) {
+      if (mode && mode !== 'read') {
+        setInlineComposerCollapsed(conversation.id, true);
+      }
       collapseConversation(conversation.id);
     } else {
       expandConversation(conversation.id);
     }
-  }, [isExpanded, expandConversation, collapseConversation, conversation.id]);
+  }, [isExpanded, expandConversation, collapseConversation, conversation.id, mode, setInlineComposerCollapsed]);
 
   // Handle mouse enter - cancel scheduled collapse
   const handleMouseEnter = useCallback(() => {
@@ -99,26 +115,28 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
     }
 
     if (type === 'close') {
-      setIsComposerCollapsed(true);
+      setInlineComposerCollapsed(conv.id, true);
       return;
     }
 
     if (type === 'delete') {
       setConversationMode(conv.id, 'read');
-      setIsComposerCollapsed(false);
+      setInlineComposerCollapsed(conv.id, false);
+      clearInlineDraft(conv.id);
       return;
     }
 
     if (type === 'send') {
       markAsRead(conv.id);
       setConversationMode(conv.id, 'read');
-      setIsComposerCollapsed(false);
+      setInlineComposerCollapsed(conv.id, false);
+      clearInlineDraft(conv.id);
       logger.info('Inline reply sent (placeholder).', { conversationId: conv.id });
       return;
     }
 
     logger.info('Inline composer action not implemented.', { type, conversationId: conv.id });
-  }, [markAsRead, setConversationMode]);
+  }, [markAsRead, setConversationMode, setInlineComposerCollapsed, clearInlineDraft]);
 
   // Trigger bezel animation on expand
   const itemRef = useRef<HTMLElement>(null);
@@ -131,20 +149,20 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
 
   useEffect(() => {
     if (!mode || mode === 'read') {
-      setIsComposerCollapsed(false);
+      if (isComposerCollapsed) {
+        setInlineComposerCollapsed(conversation.id, false);
+      }
       setIsHovered(false);
       removeHoveredId(conversation.id);
     }
-  }, [mode, conversation.id, removeHoveredId]);
+  }, [mode, conversation.id, removeHoveredId, setInlineComposerCollapsed, isComposerCollapsed]);
 
   useEffect(() => {
-    if (!isExpanded && mode && mode !== 'read') {
-      setConversationMode(conversation.id, 'read');
-      setIsComposerCollapsed(false);
+    if (!isExpanded) {
       setIsHovered(false);
       removeHoveredId(conversation.id);
     }
-  }, [isExpanded, mode, conversation.id, setConversationMode, removeHoveredId]);
+  }, [isExpanded, conversation.id, removeHoveredId]);
 
   // Handle fade-out animation
   useEffect(() => {
@@ -317,13 +335,15 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
       </article>
 
       {/* Composer box when in reply/forward mode */}
-      {mode && (mode === 'reply' || mode === 'forward') && (
+      {isExpanded && mode && (mode === 'reply' || mode === 'forward') && (
         <div className="mail-bites-inline-composer">
           <ComposerBox
             conversation={conversation}
             mode={mode}
             isExpanded={!isComposerCollapsed}
-            onExpandCollapsed={() => setIsComposerCollapsed(false)}
+            draft={inlineDraft}
+            onDraftChange={handleInlineDraftChange}
+            onExpandCollapsed={handleInlineExpand}
             onAction={handleComposerAction}
           />
         </div>

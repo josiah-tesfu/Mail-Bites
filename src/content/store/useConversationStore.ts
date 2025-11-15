@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import type { ConversationData } from '../ui/conversationParser';
+import type { DraftData } from '../types/draft';
 
 export type ConversationMode = 'read' | 'reply' | 'forward';
 
@@ -16,6 +17,8 @@ interface ConversationState {
   readIds: Set<string>;
   hoveredIds: Set<string>;
   collapseAnimationId: string | null;
+  inlineDrafts: Map<string, DraftData>;
+  inlineComposerCollapsed: Set<string>;
 }
 
 interface ConversationActions {
@@ -35,6 +38,9 @@ interface ConversationActions {
   addHoveredId: (id: string) => void;
   removeHoveredId: (id: string) => void;
   setCollapseAnimationId: (id: string | null) => void;
+  setInlineDraft: (id: string, draft: DraftData) => void;
+  clearInlineDraft: (id: string) => void;
+  setInlineComposerCollapsed: (id: string, collapsed: boolean) => void;
   reset: () => void;
 }
 
@@ -51,7 +57,9 @@ const createInitialState = (): ConversationState => ({
   pendingHoverId: null,
   readIds: new Set<string>(),
   hoveredIds: new Set<string>(),
-  collapseAnimationId: null
+  collapseAnimationId: null,
+  inlineDrafts: new Map<string, DraftData>(),
+  inlineComposerCollapsed: new Set<string>()
 });
 
 export const useConversationStore = create<ConversationStore>((set, get) => ({
@@ -179,6 +187,34 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
   },
   setCollapseAnimationId: (id) => {
     set({ collapseAnimationId: id });
+  },
+  setInlineDraft: (id, draft) => {
+    set((state) => {
+      const inlineDrafts = new Map(state.inlineDrafts);
+      inlineDrafts.set(id, { ...draft });
+      return { inlineDrafts };
+    });
+  },
+  clearInlineDraft: (id) => {
+    set((state) => {
+      if (!state.inlineDrafts.has(id)) {
+        return state;
+      }
+      const inlineDrafts = new Map(state.inlineDrafts);
+      inlineDrafts.delete(id);
+      return { inlineDrafts };
+    });
+  },
+  setInlineComposerCollapsed: (id, collapsed) => {
+    set((state) => {
+      const inlineComposerCollapsed = new Set(state.inlineComposerCollapsed);
+      if (collapsed) {
+        inlineComposerCollapsed.add(id);
+      } else {
+        inlineComposerCollapsed.delete(id);
+      }
+      return { inlineComposerCollapsed };
+    });
   },
   reset: () => {
     set(() => ({

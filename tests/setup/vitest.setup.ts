@@ -7,6 +7,7 @@
  */
 
 import { vi } from 'vitest';
+import '@testing-library/jest-dom';
 
 type ChromeEvent = chrome.events.Event<[(...args: unknown[]) => void]>;
 

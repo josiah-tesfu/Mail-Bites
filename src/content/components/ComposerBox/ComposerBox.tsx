@@ -13,6 +13,7 @@ interface ComposerBoxProps {
   composeIndex?: number;
   isExpanded?: boolean;
   draft?: DraftData;
+  onDraftChange?: (draft: DraftData) => void;
   onAction: (
     type: ComposerActionType,
     conversation: ConversationData | null,
@@ -40,6 +41,7 @@ const ComposerBox: React.FC<ComposerBoxProps> = memo(({
   composeIndex,
   isExpanded = true,
   draft,
+  onDraftChange,
   onAction,
   onExpandCollapsed
 }) => {
@@ -52,6 +54,7 @@ const ComposerBox: React.FC<ComposerBoxProps> = memo(({
     isDirty: draft?.isDirty || false,
     timestamp: draft?.timestamp || Date.now()
   }));
+  const isInlineComposer = Boolean(conversation && mode !== 'compose');
 
   // Store actions
   const saveDraft = useComposerStore((state) => state.saveDraft);
@@ -63,10 +66,14 @@ const ComposerBox: React.FC<ComposerBoxProps> = memo(({
     }
   }, [draft]);
 
-  // Auto-save draft on field change
+  // Auto-save draft on field change (standalone compose only)
   useEffect(() => {
     if (composeIndex !== undefined && localDraft.isDirty) {
-      saveDraft(composeIndex, localDraft);
+      saveDraft(composeIndex, {
+        ...localDraft,
+        isDirty: false,
+        timestamp: Date.now()
+      });
     }
   }, [localDraft, composeIndex, saveDraft]);
 
@@ -79,6 +86,48 @@ const ComposerBox: React.FC<ComposerBoxProps> = memo(({
       timestamp: Date.now()
     }));
   }, []);
+
+  const latestDraftRef = useRef(localDraft);
+  useEffect(() => {
+    latestDraftRef.current = localDraft;
+  }, [localDraft]);
+
+  const inlineDraftContextRef = useRef({
+    conversation,
+    onDraftChange,
+    isInlineComposer
+  });
+
+  useEffect(() => {
+    inlineDraftContextRef.current = {
+      conversation,
+      onDraftChange,
+      isInlineComposer
+    };
+  }, [conversation, onDraftChange, isInlineComposer]);
+
+  const persistInlineDraft = useCallback(() => {
+    const { conversation: conv, onDraftChange: draftCb, isInlineComposer: inline } = inlineDraftContextRef.current;
+    if (inline && draftCb && conv) {
+      draftCb({
+        ...latestDraftRef.current,
+        isDirty: false,
+        timestamp: Date.now()
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isExpanded) {
+      persistInlineDraft();
+    }
+  }, [isExpanded, persistInlineDraft]);
+
+  useEffect(() => {
+    return () => {
+      persistInlineDraft();
+    };
+  }, [persistInlineDraft]);
 
   // Trigger bezel surface animation on mount (expanded state only)
   useEffect(() => {
@@ -101,8 +150,11 @@ const ComposerBox: React.FC<ComposerBoxProps> = memo(({
 
   // Handle action button clicks
   const handleAction = useCallback((type: ComposerActionType) => {
+    if (type === 'close') {
+      persistInlineDraft();
+    }
     onAction(type, conversation, composeIndex);
-  }, [onAction, conversation, composeIndex]);
+  }, [onAction, conversation, composeIndex, persistInlineDraft]);
 
   // Handle expand request
   const handleExpand = useCallback(() => {
@@ -113,7 +165,6 @@ const ComposerBox: React.FC<ComposerBoxProps> = memo(({
 
   // Render collapsed draft preview
   const [isCollapsedHovered, setIsCollapsedHovered] = useState(false);
-  const isInlineComposer = Boolean(conversation && mode !== 'compose');
 
   useEffect(() => {
     if (isExpanded || !isInlineComposer) {
