@@ -132,15 +132,19 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
   useEffect(() => {
     if (!mode || mode === 'read') {
       setIsComposerCollapsed(false);
+      setIsHovered(false);
+      removeHoveredId(conversation.id);
     }
-  }, [mode]);
+  }, [mode, conversation.id, removeHoveredId]);
 
   useEffect(() => {
     if (!isExpanded && mode && mode !== 'read') {
       setConversationMode(conversation.id, 'read');
       setIsComposerCollapsed(false);
+      setIsHovered(false);
+      removeHoveredId(conversation.id);
     }
-  }, [isExpanded, mode, conversation.id, setConversationMode]);
+  }, [isExpanded, mode, conversation.id, setConversationMode, removeHoveredId]);
 
   // Handle fade-out animation
   useEffect(() => {

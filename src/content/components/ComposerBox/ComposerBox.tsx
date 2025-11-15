@@ -113,12 +113,13 @@ const ComposerBox: React.FC<ComposerBoxProps> = memo(({
 
   // Render collapsed draft preview
   const [isCollapsedHovered, setIsCollapsedHovered] = useState(false);
+  const isInlineComposer = Boolean(conversation && mode !== 'compose');
 
   useEffect(() => {
-    if (isExpanded) {
+    if (isExpanded || !isInlineComposer) {
       setIsCollapsedHovered(false);
     }
-  }, [isExpanded]);
+  }, [isExpanded, isInlineComposer]);
 
   if (!isExpanded) {
     const collapsedClasses = [
@@ -126,14 +127,23 @@ const ComposerBox: React.FC<ComposerBoxProps> = memo(({
       'mail-bites-response-box--collapsed',
       'mail-bites-item',
       'mail-bites-card',
-      'mail-bites-card--collapsed',
-      'is-expanded',
-      'is-active'
+      'mail-bites-card--collapsed'
     ];
 
-    if (isCollapsedHovered) {
-      collapsedClasses.push('is-hovered');
+    if (isInlineComposer) {
+      collapsedClasses.push('is-expanded', 'is-active');
+      if (isCollapsedHovered) {
+        collapsedClasses.push('is-hovered');
+      }
     }
+
+    const collapsedHandlers: React.HTMLAttributes<HTMLDivElement> = isInlineComposer
+      ? {
+          onClick: handleExpand,
+          onMouseEnter: () => setIsCollapsedHovered(true),
+          onMouseLeave: () => setIsCollapsedHovered(false)
+        }
+      : {};
 
     return (
       <div
@@ -142,9 +152,7 @@ const ComposerBox: React.FC<ComposerBoxProps> = memo(({
         data-conversation-id={conversation?.id}
         data-compose-index={composeIndex}
         data-response-mode={mode}
-        onClick={handleExpand}
-        onMouseEnter={() => setIsCollapsedHovered(true)}
-        onMouseLeave={() => setIsCollapsedHovered(false)}
+        {...collapsedHandlers}
       >
         <CollapsedDraft
           recipient={localDraft.to || ''}

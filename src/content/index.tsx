@@ -135,6 +135,13 @@ const MailBitesApp = ({ host }: { host: HTMLElement }) => {
   const handleGlobalDismiss = useCallback(() => {
     const conversationStore = useConversationStore.getState();
 
+    if (expandedComposeIndex !== null) {
+      logger.info('Collapsing compose box via click-outside', { expandedComposeIndex });
+      setExpandedComposeIndex(null);
+    }
+
+    const currentExpandedId = conversationStore.expandedId;
+
     // Close any inline reply/forward composers.
     conversationStore.conversationModes.forEach((mode, conversationId) => {
       if (mode !== 'read') {
@@ -142,15 +149,10 @@ const MailBitesApp = ({ host }: { host: HTMLElement }) => {
       }
     });
 
-    if (conversationStore.expandedId) {
-      logger.info('Collapsing conversation via click-outside', { expandedId: conversationStore.expandedId });
-      conversationStore.collapseConversation(conversationStore.expandedId);
+    if (currentExpandedId) {
+      logger.info('Collapsing conversation via click-outside', { expandedId: currentExpandedId });
+      conversationStore.collapseConversation(currentExpandedId);
       conversationStore.setHighlightedId(null);
-    }
-
-    if (expandedComposeIndex !== null) {
-      logger.info('Collapsing compose box via click-outside', { expandedComposeIndex });
-      setExpandedComposeIndex(null);
     }
   }, [expandedComposeIndex, setExpandedComposeIndex]);
 
