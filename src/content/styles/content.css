@@ -12,6 +12,13 @@
   line-height: 1.5;
 }
 
+#mail-bites-root button,
+.mail-bites-action,
+.mail-bites-action-button {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 /* === Overlay Stack === */
 .mail-bites-overlay {
   display: flex;
@@ -73,12 +80,28 @@
 
 /* === Toolbar === */
 .mail-bites-toolbar {
-  display: flex;
-  gap: 20px;
-  margin: 0 auto 24px;
+  display: grid;
+  grid-template-columns: minmax(200px, max-content) 1fr;
+  column-gap: 12px;
   align-items: flex-end;
+  margin: 0 auto 24px;
   max-width: 840px;
   width: 100%;
+}
+.mail-bites-toolbar > *:not(:last-child) {
+  margin-right: 0;
+}
+
+.mail-bites-toolbar-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 40px;
+}
+
+.mail-bites-toolbar-filters {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
 }
 
 .mail-bites-toolbar-filter {
@@ -149,12 +172,16 @@
 }
 
 .mail-bites-toolbar .mail-bites-action:hover {
-  transform: scale(1.3);
+  transform: scale(1.2);
   opacity: 1; /* Full opacity on hover */
 }
 
 .mail-bites-toolbar .mail-bites-action:active {
   transform: scale(1.0);
+  opacity: 1;
+}
+
+.mail-bites-toolbar .mail-bites-toolbar-filter-primary {
   opacity: 1;
 }
 
@@ -361,6 +388,8 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .mail-bites-sender {
@@ -382,6 +411,8 @@
   text-align: right;
   padding-left: 12px;
   transition: opacity 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* === Action Buttons === */
@@ -423,7 +454,7 @@
 }
 
 .mail-bites-action:hover {
-  transform: scale(1.3); /* grow on hover */
+  transform: scale(1.2); /* grow on hover */
 }
 
 .mail-bites-action:active {
@@ -511,7 +542,7 @@
 }
 
 .mail-bites-action-button:hover {
-  transform: scale(1.3);
+  transform: scale(1.2);
 }
 
 .mail-bites-action-button:active {

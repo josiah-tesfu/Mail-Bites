@@ -6,17 +6,14 @@ interface ToolbarState {
   isSearchActive: boolean;
   searchQuery: string;
   filterButtonOrder: ToolbarFilterType[];
-  isFilterCollapsed: boolean;
 }
 
 interface ToolbarActions {
   toggleSearch: () => void;
   setSearchQuery: (query: string) => void;
   rotateFilterButtons: (clickedType: ToolbarFilterType) => void;
-  toggleFilterCollapse: () => void;
   setFilterOrder: (order: ToolbarFilterType[]) => void;
-  setFilterCollapsed: (collapsed: boolean) => void;
-  setPrimaryFilter: (filter: ToolbarFilterType, options?: { collapse?: boolean }) => void;
+  setPrimaryFilter: (filter: ToolbarFilterType) => void;
   reset: () => void;
 }
 
@@ -27,8 +24,7 @@ const defaultOrder: ToolbarFilterType[] = ['unread', 'read', 'draft'];
 const createInitialState = (): ToolbarState => ({
   isSearchActive: false,
   searchQuery: '',
-  filterButtonOrder: [...defaultOrder],
-  isFilterCollapsed: true
+  filterButtonOrder: [...defaultOrder]
 });
 
 export const useToolbarStore = create<ToolbarStore>((set) => ({
@@ -58,15 +54,9 @@ export const useToolbarStore = create<ToolbarStore>((set) => ({
       ];
 
       return {
-        filterButtonOrder: nextOrder,
-        isFilterCollapsed: state.isFilterCollapsed
+        filterButtonOrder: nextOrder
       };
     });
-  },
-  toggleFilterCollapse: () => {
-    set((state) => ({
-      isFilterCollapsed: !state.isFilterCollapsed
-    }));
   },
   setFilterOrder: (order) => {
     const uniqueOrder = order.filter(
@@ -79,16 +69,12 @@ export const useToolbarStore = create<ToolbarStore>((set) => ({
       filterButtonOrder: completeOrder.slice(0, defaultOrder.length)
     });
   },
-  setFilterCollapsed: (collapsed) => {
-    set({ isFilterCollapsed: collapsed });
-  },
-  setPrimaryFilter: (filter, options) => {
+  setPrimaryFilter: (filter) => {
     set((state) => {
       const filtered = state.filterButtonOrder.filter((entry) => entry !== filter);
       const nextOrder: ToolbarFilterType[] = [filter, ...filtered];
       return {
-        filterButtonOrder: nextOrder,
-        isFilterCollapsed: options?.collapse ?? state.isFilterCollapsed
+        filterButtonOrder: nextOrder
       };
     });
   },

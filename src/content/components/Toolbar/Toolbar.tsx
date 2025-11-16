@@ -82,7 +82,7 @@ export const Toolbar = () => {
     }
 
     addComposeBox();
-    setPrimaryFilter('draft', { collapse: true });
+    setPrimaryFilter('draft');
 
     if (isSearchActive) {
       toggleSearch();
@@ -120,26 +120,28 @@ export const Toolbar = () => {
 
   return (
     <div className="mail-bites-toolbar">
-      <ToolbarButton
-        ref={newEmailButtonRef}
-        type="new-email"
-        onClick={handleNewEmailClick}
-        isDisabled={isNewEmailAnimating || isComposingAnimating}
-      />
-      
-      {isSearchActive ? (
-        <SearchInput
-          onSearchClose={handleSearchClose}
-        />
-      ) : (
+      <div className="mail-bites-toolbar-actions">
         <ToolbarButton
-          ref={searchButtonRef}
-          type="search"
-          onClick={handleSearchClick}
+          ref={newEmailButtonRef}
+          type="new-email"
+          onClick={handleNewEmailClick}
+          isDisabled={isNewEmailAnimating || isComposingAnimating}
         />
-      )}
 
-      <FilterButtons />
+        {isSearchActive ? (
+          <SearchInput onSearchClose={handleSearchClose} />
+        ) : (
+          <ToolbarButton
+            ref={searchButtonRef}
+            type="search"
+            onClick={handleSearchClick}
+          />
+        )}
+      </div>
+
+      <div className="mail-bites-toolbar-filters">
+        <FilterButtons />
+      </div>
     </div>
   );
 };

@@ -148,15 +148,12 @@ describe('useToolbarStore', () => {
     expect(useToolbarStore.getState().searchQuery).toBe('');
   });
 
-  it('rotates filter buttons and toggles collapse', () => {
-    const { rotateFilterButtons, toggleFilterCollapse, setFilterOrder, reset } =
+  it('rotates filter buttons and updates order controls', () => {
+    const { rotateFilterButtons, setFilterOrder, reset } =
       useToolbarStore.getState();
 
     rotateFilterButtons('draft');
     expect(useToolbarStore.getState().filterButtonOrder[0]).toBe('draft');
-
-    toggleFilterCollapse();
-    expect(useToolbarStore.getState().isFilterCollapsed).toBe(false);
 
     setFilterOrder(['read', 'unread']);
     expect(useToolbarStore.getState().filterButtonOrder).toEqual([
@@ -173,15 +170,11 @@ describe('useToolbarStore', () => {
     ]);
   });
 
-  it('sets primary filter and collapse state explicitly', () => {
-    const { setPrimaryFilter, setFilterCollapsed } = useToolbarStore.getState();
+  it('sets primary filter explicitly', () => {
+    const { setPrimaryFilter } = useToolbarStore.getState();
 
-    setPrimaryFilter('draft', { collapse: true });
+    setPrimaryFilter('draft');
     expect(useToolbarStore.getState().filterButtonOrder[0]).toBe('draft');
-    expect(useToolbarStore.getState().isFilterCollapsed).toBe(true);
-
-    setFilterCollapsed(false);
-    expect(useToolbarStore.getState().isFilterCollapsed).toBe(false);
   });
 });
 
