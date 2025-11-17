@@ -2,10 +2,16 @@ import { create } from 'zustand';
 
 export type ToolbarFilterType = 'unread' | 'read' | 'draft';
 
+interface FilterPulseEvent {
+  type: ToolbarFilterType;
+  id: number;
+}
+
 interface ToolbarState {
   isSearchActive: boolean;
   searchQuery: string;
   filterButtonOrder: ToolbarFilterType[];
+  filterPulseEvent: FilterPulseEvent | null;
 }
 
 interface ToolbarActions {
@@ -14,6 +20,7 @@ interface ToolbarActions {
   rotateFilterButtons: (clickedType: ToolbarFilterType) => void;
   setFilterOrder: (order: ToolbarFilterType[]) => void;
   setPrimaryFilter: (filter: ToolbarFilterType) => void;
+  triggerFilterPulse: (type: ToolbarFilterType) => void;
   reset: () => void;
 }
 
@@ -24,7 +31,8 @@ const defaultOrder: ToolbarFilterType[] = ['unread', 'read', 'draft'];
 const createInitialState = (): ToolbarState => ({
   isSearchActive: false,
   searchQuery: '',
-  filterButtonOrder: [...defaultOrder]
+  filterButtonOrder: [...defaultOrder],
+  filterPulseEvent: null
 });
 
 export const useToolbarStore = create<ToolbarStore>((set) => ({
@@ -76,6 +84,14 @@ export const useToolbarStore = create<ToolbarStore>((set) => ({
       return {
         filterButtonOrder: nextOrder
       };
+    });
+  },
+  triggerFilterPulse: (type) => {
+    set({
+      filterPulseEvent: {
+        type,
+        id: Date.now()
+      }
     });
   },
   reset: () => {

@@ -3,8 +3,20 @@
   "name": "Mail Bites",
   "description": "Minimal scaffolding for Gmail UI customization.",
   "version": "0.2.0",
+  "icons": {
+    "16": "leaf-logo.png",
+    "32": "leaf-logo.png",
+    "48": "leaf-logo.png",
+    "128": "leaf-logo.png"
+  },
   "action": {
-    "default_title": "Mail Bites"
+    "default_title": "Mail Bites",
+    "default_icon": {
+      "16": "leaf-logo.png",
+      "32": "leaf-logo.png",
+      "48": "leaf-logo.png",
+      "128": "leaf-logo.png"
+    }
   },
   "content_scripts": [
     {
@@ -38,7 +50,8 @@
         "close-draft.svg",
         "draft-button.svg",
         "read-button.svg",
-        "unread-button.svg"
+        "unread-button.svg",
+        "leaf-logo.png"
       ],
       "matches": [
         "https://mail.google.com/*"

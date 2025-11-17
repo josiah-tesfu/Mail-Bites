@@ -3,6 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 
 import ConversationList from './components/ConversationList/ConversationList';
 import ComposerBox from './components/ComposerBox';
+import CollapsedDraft from './components/ComposerBox/CollapsedDraft';
 import { Toolbar } from './components/Toolbar/Toolbar';
 import { ensureManropeFont } from './fontLoader';
 import { logger } from './logger';
@@ -13,6 +14,7 @@ import { resetComposerStore, resetConversationStore, resetToolbarStore, useCompo
 import type { ComposerActionType } from './ui/types/actionTypes';
 import type { ConversationData } from './ui/conversationParser';
 import { GmailViewTracker, type ViewContext } from './viewTracker';
+import { animationTimings } from './hooks/useAnimations';
 
 const ROOT_ID = 'mail-bites-root';
 
@@ -51,6 +53,43 @@ const MailBitesApp = ({ host }: { host: HTMLElement }) => {
   }, []);
 
   useEffect(() => {
+    if (!document.head || !chrome?.runtime?.getURL) {
+      return;
+    }
+
+    const iconUrl = chrome.runtime.getURL('leaf-logo.png');
+    const rels = ['icon', 'shortcut icon'];
+    const createdLinks: HTMLLinkElement[] = [];
+    const previousHrefs = new Map<HTMLLinkElement, string>();
+
+    rels.forEach((rel) => {
+      let link = document.head!.querySelector<HTMLLinkElement>(`link[rel="${rel}"]`);
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = rel;
+        link.type = 'image/png';
+        document.head!.appendChild(link);
+        createdLinks.push(link);
+      } else {
+        previousHrefs.set(link, link.href);
+      }
+      link.href = iconUrl;
+    });
+
+    return () => {
+      createdLinks.forEach((link) => {
+        if (link.parentNode) {
+          link.parentNode.removeChild(link);
+        }
+      });
+
+      previousHrefs.forEach((href, link) => {
+        link.href = href;
+      });
+    };
+  }, []);
+
+  useEffect(() => {
     const tracker = new GmailViewTracker((context) => {
       setViewContext(context);
       setOverlayVisible(Boolean(context.mainElement));
@@ -84,6 +123,65 @@ const MailBitesApp = ({ host }: { host: HTMLElement }) => {
     host.style.display = isOverlayVisible ? 'block' : 'none';
   }, [host, isOverlayVisible]);
 
+  const collapseComposerWithAnimation = useCallback((composeIndex: number, onComplete: () => void) => {
+    const composerSelector = `.mail-bites-response-box[data-compose-index="${composeIndex}"]`;
+    const composerElement = document.querySelector<HTMLElement>(composerSelector);
+
+    if (!composerElement) {
+      onComplete();
+      return;
+    }
+
+    const collapsingClass = 'is-collapsing';
+    const duration = animationTimings.COLLAPSE_TRANSITION_DURATION;
+    const height = composerElement.getBoundingClientRect().height;
+    const previousHeight = composerElement.style.height;
+    const previousOverflow = composerElement.style.overflow;
+
+    composerElement.style.height = `${height}px`;
+    composerElement.style.overflow = 'hidden';
+
+    let hasCompleted = false;
+    let fallbackId: number | null = null;
+
+    const cleanup = () => {
+      if (fallbackId !== null) {
+        window.clearTimeout(fallbackId);
+        fallbackId = null;
+      }
+      composerElement.removeEventListener('transitionend', handleTransitionEnd);
+      composerElement.classList.remove(collapsingClass);
+      composerElement.style.removeProperty('pointer-events');
+      composerElement.style.height = previousHeight;
+      composerElement.style.overflow = previousOverflow;
+    };
+
+    const complete = () => {
+      if (hasCompleted) {
+        return;
+      }
+      hasCompleted = true;
+      cleanup();
+      onComplete();
+    };
+
+    const handleTransitionEnd = (event: TransitionEvent) => {
+      if (event.target !== composerElement || event.propertyName !== 'height') {
+        return;
+      }
+      complete();
+    };
+
+    composerElement.style.pointerEvents = 'none';
+    composerElement.classList.add(collapsingClass);
+    requestAnimationFrame(() => {
+      composerElement.style.height = '0px';
+    });
+
+    composerElement.addEventListener('transitionend', handleTransitionEnd);
+    fallbackId = window.setTimeout(complete, duration);
+  }, []);
+
   // Handle standalone compose box actions
   const handleStandaloneComposerAction = useCallback((
     type: ComposerActionType,
@@ -115,13 +213,15 @@ const MailBitesApp = ({ host }: { host: HTMLElement }) => {
 
     if (type === 'send') {
       sendEmail(composeIndex);
-      removeComposeBox(composeIndex, { archive: false });
       logger.info('Draft marked as sent.', { composeIndex });
+      collapseComposerWithAnimation(composeIndex, () => {
+        removeComposeBox(composeIndex, { archive: false });
+      });
       return;
     }
 
     logger.info('Standalone composer action not implemented:', type, composeIndex);
-  }, [composeDrafts, expandedComposeIndex, removeComposeBox, saveDraft, sendEmail, setExpandedComposeIndex]);
+  }, [collapseComposerWithAnimation, composeDrafts, expandedComposeIndex, removeComposeBox, saveDraft, sendEmail, setExpandedComposeIndex]);
 
   // Handle compose box click to expand
   const handleComposeBoxClick = useCallback((index: number) => {
@@ -205,28 +305,51 @@ const MailBitesApp = ({ host }: { host: HTMLElement }) => {
         <>
           <Toolbar />
           <ConversationList 
-            composeBoxes={composeBoxCount > 0 ? (
-              Array.from({ length: composeBoxCount }, (_, index) => {
-                const draft = composeDrafts.get(index);
-                const isExpanded = expandedComposeIndex === index;
-                
-                return (
-                  <div
-                    key={index}
-                    onClick={() => !isExpanded && handleComposeBoxClick(index)}
-                    style={{ cursor: !isExpanded ? 'pointer' : 'auto' }}
-                  >
-                    <ComposerBox
-                      conversation={null}
-                      mode="compose"
-                      composeIndex={index}
-                      isExpanded={isExpanded}
-                      draft={draft}
-                      onAction={handleStandaloneComposerAction}
-                    />
-                  </div>
-                );
-              })
+            composeBoxes={composeDrafts.size > 0 ? (
+              Array.from(composeDrafts.entries())
+                .sort((a, b) => b[0] - a[0])
+                .map(([composeIndex, draft]) => {
+                  const isExpanded = expandedComposeIndex === composeIndex;
+
+                  if (isExpanded) {
+                    return (
+                      <ComposerBox
+                        key={composeIndex}
+                        conversation={null}
+                        mode="compose"
+                        composeIndex={composeIndex}
+                        isExpanded
+                        draft={draft}
+                        onAction={handleStandaloneComposerAction}
+                      />
+                    );
+                  }
+
+                  return (
+                    <div
+                      key={composeIndex}
+                      className="mail-bites-response-box mail-bites-response-box--collapsed mail-bites-item mail-bites-card mail-bites-card--collapsed"
+                      data-compose-index={composeIndex}
+                      data-response-mode="compose"
+                      onClick={() => setExpandedComposeIndex(composeIndex)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          setExpandedComposeIndex(composeIndex);
+                        }
+                      }}
+                    >
+                      <CollapsedDraft
+                        recipient={draft?.to || ''}
+                        subject={draft?.subject || ''}
+                        timestamp={draft?.timestamp || Date.now()}
+                        onDelete={() => handleStandaloneComposerAction('delete', null, composeIndex)}
+                      />
+                    </div>
+                  );
+                })
             ) : undefined}
           />
         </>

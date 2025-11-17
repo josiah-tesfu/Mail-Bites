@@ -43,7 +43,7 @@
   }
   100% {
     border-radius: 12px;
-    transform: translateY(-3px) scale(1.01);
+    transform: translateY(0) scale(1.01);
   }
 }
 
@@ -157,5 +157,20 @@
   100% {
     opacity: 0;
     transform: scaleY(0);
+  }
+}
+
+@keyframes mail-bites-filter-pulse {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.2);
+  }
+  80% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
   }
 }

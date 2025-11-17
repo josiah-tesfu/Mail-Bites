@@ -8,6 +8,7 @@
 ### 2. UI Hooks & Interaction Parity
 - Extract the documented `useClickOutside` helper and wire it into the root overlay instead of manual event bookkeeping.
 - Finish the toolbar/search story: remove the stale TODO and ensure search state flows strictly through `useToolbarStore`.
+- Future polish: consider migrating toolbar pulse/compose/search animations to Framer Motion for richer easing once core features stabilize.
 - Reconcile planned composer behavior with code: standalone drafts should remain inline at the top of the conversation list (current behavior is correct) and documentation must reflect that.
 
 ### 3. Conversation & Composer Actions

@@ -107,6 +107,30 @@ const ComposerBox: React.FC<ComposerBoxProps> = memo(({
     };
   }, [conversation, onDraftChange, isInlineComposer]);
 
+  useEffect(() => {
+    if (!isExpanded) {
+      return;
+    }
+
+    const node = boxRef.current;
+    if (!node) {
+      return;
+    }
+
+    node.classList.remove('mail-bites-anim-bezel');
+    void node.offsetWidth;
+    node.classList.add('mail-bites-anim-bezel');
+
+    const timeoutId = window.setTimeout(() => {
+      node.classList.remove('mail-bites-anim-bezel');
+    }, 400);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      node.classList.remove('mail-bites-anim-bezel');
+    };
+  }, [isExpanded]);
+
   const persistInlineDraft = useCallback(() => {
     const { conversation: conv, onDraftChange: draftCb, isInlineComposer: inline } = inlineDraftContextRef.current;
     if (!shouldPersistInlineDraftRef.current) {
@@ -152,10 +176,17 @@ const ComposerBox: React.FC<ComposerBoxProps> = memo(({
 
   // Handle expand request
   const handleExpand = useCallback(() => {
-    if (onExpandCollapsed) {
-      onExpandCollapsed();
+    if (composeIndex === undefined) {
+      return;
     }
-  }, [onExpandCollapsed]);
+
+    const currentExpanded = useComposerStore.getState().expandedComposeIndex;
+    if (currentExpanded === composeIndex) {
+      useComposerStore.getState().setExpandedComposeIndex(null);
+    } else {
+      useComposerStore.getState().setExpandedComposeIndex(composeIndex);
+    }
+  }, [composeIndex]);
 
   // Render collapsed draft preview
   const [isCollapsedHovered, setIsCollapsedHovered] = useState(false);
@@ -182,13 +213,22 @@ const ComposerBox: React.FC<ComposerBoxProps> = memo(({
       }
     }
 
-    const collapsedHandlers: React.HTMLAttributes<HTMLDivElement> = isInlineComposer
-      ? {
-          onClick: handleExpand,
-          onMouseEnter: () => setIsCollapsedHovered(true),
-          onMouseLeave: () => setIsCollapsedHovered(false)
+    const collapsedHandlers: React.HTMLAttributes<HTMLDivElement> = {
+      onClick: handleExpand,
+      role: 'button',
+      tabIndex: 0,
+      onKeyDown: (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          handleExpand();
         }
-      : {};
+      }
+    };
+
+    if (isInlineComposer) {
+      collapsedHandlers.onMouseEnter = () => setIsCollapsedHovered(true);
+      collapsedHandlers.onMouseLeave = () => setIsCollapsedHovered(false);
+    }
 
     return (
       <div

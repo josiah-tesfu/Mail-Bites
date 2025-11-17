@@ -63,6 +63,20 @@
   animation: mail-bites-collapse-card 0.35s cubic-bezier(0.33, 1, 0.68, 1) forwards;
 }
 
+.mail-bites-response-box.is-collapsing {
+  transform-origin: top center;
+  transition:
+    height 0.35s cubic-bezier(0.33, 1, 0.68, 1),
+    opacity 0.35s cubic-bezier(0.33, 1, 0.68, 1),
+    transform 0.35s cubic-bezier(0.33, 1, 0.68, 1),
+    margin 0.35s cubic-bezier(0.33, 1, 0.68, 1);
+  opacity: 0;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  transform: scaleY(0);
+  min-height: 0 !important;
+}
+
 .mail-bites-thread.is-collapsing .mail-bites-inline-composer {
   opacity: 0;
   transition: opacity 0.2s ease;
@@ -114,6 +128,8 @@
 .mail-bites-toolbar-filter.is-collapsed .mail-bites-toolbar-filter-secondary {
   display: none;
 }
+
+/* Standalone draft spacing handled by compose box */
 
 .mail-bites-toolbar-filter-divider {
   width: 1px;
@@ -179,6 +195,10 @@
 .mail-bites-toolbar .mail-bites-action:active {
   transform: scale(1.0);
   opacity: 1;
+}
+
+.mail-bites-toolbar .mail-bites-filter-pulse {
+  animation: mail-bites-filter-pulse 0.35s cubic-bezier(0.55, 0, 0.1, 1);
 }
 
 .mail-bites-toolbar .mail-bites-toolbar-filter-primary {
@@ -493,6 +513,16 @@
   transform: translateY(-6px);
   overflow: hidden;
   transition: none;
+}
+
+.mail-bites-details-container.is-expanded .mail-bites-item-details {
+  opacity: 1;
+  max-height: 1200px;
+  transform: translateY(0);
+  transition:
+    opacity 150ms cubic-bezier(0.33, 1, 0.68, 1),
+    max-height 150ms cubic-bezier(0.33, 1, 0.68, 1),
+    transform 150ms cubic-bezier(0.33, 1, 0.68, 1);
 }
 
 /* preview actions positioned under snippet */

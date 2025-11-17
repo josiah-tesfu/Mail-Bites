@@ -3,6 +3,7 @@ import type { ConversationData } from '../../ui/conversationParser';
 import type { DraftData } from '../../types/draft';
 import type { ComposerActionType } from '../../ui/types/actionTypes';
 import { useConversationStore } from '../../store/useConversationStore';
+import { useToolbarStore } from '../../store/useToolbarStore';
 import { logger } from '../../logger';
 import { animationTimings } from '../../hooks/useAnimations';
 import ConversationDetails from './ConversationDetails';
@@ -50,6 +51,7 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
   // Local state
   const [isHovered, setIsHovered] = useState(false);
   const pendingReadRef = useRef(false);
+  const collapsePulseTriggeredRef = useRef(false);
 
   // Derived state
   const conversationId = conversation.id;
@@ -171,18 +173,6 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
     }
   }, [conversation.isUnread]);
 
-  useEffect(() => {
-    if (
-      pendingReadRef.current &&
-      !isExpanded &&
-      !isCollapsing &&
-      conversation.isUnread
-    ) {
-      pendingReadRef.current = false;
-      markAsRead(conversationId);
-    }
-  }, [conversation.isUnread, conversationId, isCollapsing, isExpanded, markAsRead]);
-
   // Handle fade-out animation
   useEffect(() => {
     if (isFadingOut && itemRef.current) {
@@ -220,13 +210,23 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
 
   useLayoutEffect(() => {
     const container = containerRef.current;
+    const shouldMarkAsRead = pendingReadRef.current && conversation.isUnread;
 
     if (!isCollapsing) {
+      collapsePulseTriggeredRef.current = false;
       if (container) {
         container.style.removeProperty('height');
         container.style.removeProperty('overflow');
       }
       return;
+    }
+
+    if (shouldMarkAsRead && !collapsePulseTriggeredRef.current) {
+      const toolbarState = useToolbarStore.getState();
+      if (toolbarState.filterButtonOrder[0] === 'unread') {
+        toolbarState.triggerFilterPulse('read');
+      }
+      collapsePulseTriggeredRef.current = true;
     }
 
     if (!container) {
@@ -243,6 +243,12 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
         return;
       }
       finished = true;
+
+      if (shouldMarkAsRead) {
+        pendingReadRef.current = false;
+        markAsRead(conversationId);
+      }
+
       container.style.removeProperty('height');
       container.style.removeProperty('overflow');
       if (useConversationStore.getState().collapsingId === conversation.id) {
@@ -281,7 +287,7 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
     return () => {
       window.clearTimeout(fallbackId);
     };
-  }, [isCollapsing, clearCollapseState, conversation.id]);
+  }, [isCollapsing, clearCollapseState, conversation.id, conversation.isUnread, conversationId, markAsRead]);
 
   const showExpandedStyles = isExpanded || isCollapsing;
   const forceHoverState = isCollapsing && (isHovered || isHighlighted);
