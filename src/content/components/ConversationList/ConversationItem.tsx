@@ -209,6 +209,10 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
   }, [isFadingOut, finalizeDismiss, conversation.id]);
 
   useLayoutEffect(() => {
+    if (!conversation.isUnread) {
+      return;
+    }
+
     const container = containerRef.current;
     const shouldMarkAsRead = pendingReadRef.current && conversation.isUnread;
 
@@ -288,6 +292,77 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
       window.clearTimeout(fallbackId);
     };
   }, [isCollapsing, clearCollapseState, conversation.id, conversation.isUnread, conversationId, markAsRead]);
+
+  useLayoutEffect(() => {
+    if (conversation.isUnread) {
+      return;
+    }
+
+    const container = containerRef.current;
+
+    if (!isCollapsing) {
+      collapsePulseTriggeredRef.current = false;
+      if (container) {
+        container.style.removeProperty('height');
+        container.style.removeProperty('overflow');
+      }
+      return;
+    }
+
+    if (!container) {
+      clearCollapseState();
+      return;
+    }
+
+    const measuredHeight =
+      container.scrollHeight || container.getBoundingClientRect().height;
+
+    let finished = false;
+    const finishCollapse = () => {
+      if (finished) {
+        return;
+      }
+      finished = true;
+
+      container.style.removeProperty('height');
+      container.style.removeProperty('overflow');
+      if (useConversationStore.getState().collapsingId === conversation.id) {
+        clearCollapseState();
+      }
+    };
+
+    const fallbackDuration = animationTimings.COLLAPSE_TRANSITION_DURATION;
+
+    if (measuredHeight > 0) {
+      container.style.height = `${measuredHeight}px`;
+      container.style.overflow = 'hidden';
+
+      const rafId = window.requestAnimationFrame(() => {
+        container.style.height = '0px';
+      });
+
+      const handleTransitionEnd = (event: TransitionEvent) => {
+        if (event.target !== container || event.propertyName !== 'height') {
+          return;
+        }
+        finishCollapse();
+      };
+
+      container.addEventListener('transitionend', handleTransitionEnd);
+      const fallbackId = window.setTimeout(finishCollapse, fallbackDuration);
+
+      return () => {
+        window.cancelAnimationFrame(rafId);
+        container.removeEventListener('transitionend', handleTransitionEnd);
+        window.clearTimeout(fallbackId);
+      };
+    }
+
+    const fallbackId = window.setTimeout(finishCollapse, fallbackDuration);
+    return () => {
+      window.clearTimeout(fallbackId);
+    };
+  }, [isCollapsing, clearCollapseState, conversation.id, conversation.isUnread]);
 
   const showExpandedStyles = isExpanded || isCollapsing;
   const forceHoverState = isCollapsing && (isHovered || isHighlighted);
