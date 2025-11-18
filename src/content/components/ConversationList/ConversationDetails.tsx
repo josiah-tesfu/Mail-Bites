@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ConversationData } from '../../ui/conversationParser';
 import { useConversationStore } from '../../store/useConversationStore';
 
@@ -31,6 +31,35 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
   const markAsRead = useConversationStore((state) => state.markAsRead);
   const [isVisible, setIsVisible] = useState(isExpanded);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Keep the expanded height available as a CSS variable so collapsed transitions
+  // (read collapse) can animate from the real height instead of a large fallback.
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const updateHeight = () => {
+      const measuredHeight =
+        container.scrollHeight || container.getBoundingClientRect().height;
+      container.style.setProperty(
+        '--details-expanded-max-height',
+        `${measuredHeight}px`
+      );
+    };
+
+    updateHeight();
+
+    if ('ResizeObserver' in window) {
+      const observer = new ResizeObserver(() => {
+        updateHeight();
+      });
+      observer.observe(container);
+      return () => observer.disconnect();
+    }
+
+    window.addEventListener('resize', updateHeight);
+    return () => window.removeEventListener('resize', updateHeight);
+  }, [conversation.snippet, isExpanded, mode]);
 
   // Handle expand/collapse animation
   useEffect(() => {

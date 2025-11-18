@@ -30,10 +30,9 @@ interface ComposerBoxProps {
  * Responsibilities:
  * - Render expanded composer (recipients, subject, message fields)
  * - Render collapsed draft preview
- * - Handle bezel surface animation on expand
  * - Track draft state and auto-save
  * - Render composer action buttons (send, delete, attachments)
- * - Apply animation classes (mail-bites-anim-bezel-surface, is-collapsing)
+ * - Apply animation classes (is-collapsing)
  */
 const ComposerBox: React.FC<ComposerBoxProps> = memo(({
   conversation,
@@ -106,30 +105,6 @@ const ComposerBox: React.FC<ComposerBoxProps> = memo(({
       isInlineComposer
     };
   }, [conversation, onDraftChange, isInlineComposer]);
-
-  useEffect(() => {
-    if (!isExpanded) {
-      return;
-    }
-
-    const node = boxRef.current;
-    if (!node) {
-      return;
-    }
-
-    node.classList.remove('mail-bites-anim-bezel');
-    void node.offsetWidth;
-    node.classList.add('mail-bites-anim-bezel');
-
-    const timeoutId = window.setTimeout(() => {
-      node.classList.remove('mail-bites-anim-bezel');
-    }, 400);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-      node.classList.remove('mail-bites-anim-bezel');
-    };
-  }, [isExpanded]);
 
   const persistInlineDraft = useCallback(() => {
     const { conversation: conv, onDraftChange: draftCb, isInlineComposer: inline } = inlineDraftContextRef.current;

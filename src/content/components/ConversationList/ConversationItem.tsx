@@ -9,6 +9,8 @@ import { animationTimings } from '../../hooks/useAnimations';
 import ConversationDetails from './ConversationDetails';
 import ComposerBox from '../ComposerBox';
 
+const READ_COLLAPSE_DURATION = 300;
+
 interface ConversationItemProps {
   conversation: ConversationData;
 }
@@ -52,11 +54,15 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
   const [isHovered, setIsHovered] = useState(false);
   const pendingReadRef = useRef(false);
   const collapsePulseTriggeredRef = useRef(false);
+  const expandedHeightRef = useRef<number | null>(null);
+  const collapsedHeightRef = useRef<number | null>(null);
 
   // Derived state
   const conversationId = conversation.id;
   const isExpanded = expandedId === conversationId;
   const isCollapsing = collapsingId === conversation.id;
+  const isUnreadCollapsing = isCollapsing && conversation.isUnread;
+  const isReadCollapsing = isCollapsing && !conversation.isUnread;
   const isHighlighted = highlightedId === conversation.id;
   const isFadingOut = fadingOutIds.has(conversation.id);
   const mode = conversationModes.get(conversation.id) || null;
@@ -143,6 +149,7 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
   // Trigger bezel animation on expand
   const itemRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!mode || mode === 'read') {
@@ -172,6 +179,23 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
       pendingReadRef.current = false;
     }
   }, [conversation.isUnread]);
+
+  // Cache expanded and collapsed heights so read collapse can animate to the correct target
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!container || isCollapsing) {
+      return;
+    }
+
+    const measuredHeight =
+      container.scrollHeight || container.getBoundingClientRect().height;
+
+    if (isExpanded) {
+      expandedHeightRef.current = measuredHeight;
+    } else {
+      collapsedHeightRef.current = measuredHeight;
+    }
+  }, [isExpanded, isCollapsing]);
 
   // Handle fade-out animation
   useEffect(() => {
@@ -299,6 +323,8 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
     }
 
     const container = containerRef.current;
+    const headerHeight = headerRef.current?.getBoundingClientRect().height ?? 0;
+    const item = itemRef.current;
 
     if (!isCollapsing) {
       collapsePulseTriggeredRef.current = false;
@@ -316,6 +342,24 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
 
     const measuredHeight =
       container.scrollHeight || container.getBoundingClientRect().height;
+    const startHeight = expandedHeightRef.current ?? measuredHeight;
+    const computedCollapsedHeight = (() => {
+      if (!item) return null;
+      const styles = window.getComputedStyle(item);
+      const paddingTop = parseFloat(styles.paddingTop) || 0;
+      const paddingBottom = parseFloat(styles.paddingBottom) || 0;
+      const borderTop = parseFloat(styles.borderTopWidth) || 0;
+      const borderBottom = parseFloat(styles.borderBottomWidth) || 0;
+      return headerHeight + paddingTop + paddingBottom + borderTop + borderBottom;
+    })();
+    const targetHeight = collapsedHeightRef.current && collapsedHeightRef.current > 0
+      ? collapsedHeightRef.current
+      : computedCollapsedHeight ?? Math.max(headerHeight, 0);
+
+    if (startHeight <= targetHeight) {
+      clearCollapseState();
+      return;
+    }
 
     let finished = false;
     const finishCollapse = () => {
@@ -331,14 +375,14 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
       }
     };
 
-    const fallbackDuration = animationTimings.COLLAPSE_TRANSITION_DURATION;
+    const fallbackDuration = READ_COLLAPSE_DURATION;
 
-    if (measuredHeight > 0) {
-      container.style.height = `${measuredHeight}px`;
+    if (startHeight > targetHeight) {
+      container.style.height = `${startHeight}px`;
       container.style.overflow = 'hidden';
 
       const rafId = window.requestAnimationFrame(() => {
-        container.style.height = '0px';
+        container.style.height = `${targetHeight}px`;
       });
 
       const handleTransitionEnd = (event: TransitionEvent) => {
@@ -375,6 +419,8 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
     'mail-bites-card',
     showExpandedStyles && 'is-expanded',
     isCollapsing && 'is-collapsing',
+    isUnreadCollapsing && 'is-unread-collapsing',
+    isReadCollapsing && 'is-read-collapsing',
     effectiveHovered && 'is-hovered',
     effectiveHighlighted && 'is-active',
     showExpandedStyles && mode !== 'read' && 'is-composer-active',
@@ -385,7 +431,9 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
 
   const threadClasses = [
     'mail-bites-thread',
-    isCollapsing && 'is-collapsing'
+    isCollapsing && 'is-collapsing',
+    isUnreadCollapsing && 'is-unread-collapsing',
+    isReadCollapsing && 'is-read-collapsing'
   ]
     .filter(Boolean)
     .join(' ');
@@ -405,7 +453,7 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(({ conversation }
         onMouseLeave={handleMouseLeave}
       >
         {/* Header */}
-        <div className="mail-bites-item-header">
+        <div className="mail-bites-item-header" ref={headerRef}>
           <div className="mail-bites-header-main">
             <span className="mail-bites-sender">
               {conversation.sender || 'Unknown sender'}
